@@ -1,6 +1,27 @@
 #ifndef ncore
 #define ncore
 
+#define LASSERT(args, cond, fmt, ...) \
+    if (!(cond)) { \
+        nval* err = nval_err(fmt, ##__VA_ARGS__); \
+        nval_del(args); \
+        return err; \
+    }
+
+#define LASSERT_TYPE(func, args, index, expect) \
+    LASSERT(args, args->cell[index]->type == expect, \
+        "Function '%s' passed incorrect type for argument %i. Got %s, Expected %s.", \
+        func, index, ntype_name(args->cell[index]->type), ntype_name(expect))
+
+#define LASSERT_NUM(func, args, num) \
+    LASSERT(args, args->count == num, \
+        "Function '%s' passed incorrect number of arguments. Got %i, Expected %i.", \
+        func, args->count, num)
+
+#define LASSERT_NOT_EMPTY(func, args, index) \
+    LASSERT(args, args->cell[index]->count != 0, \
+        "Function '%s' passed {} for argument %i.", func, index);
+
 struct nval;
 struct nenv;
 typedef struct nval nval;
@@ -32,7 +53,6 @@ struct nenv {
     char** syms;
     nval** vals;
 };
-
 /* Constuctor and destructor for environment types */
 nenv* nenv_new(void);
 void nenv_del(nenv* e);
@@ -61,29 +81,6 @@ nval* nval_take(nval* v, int i);
 nval* nval_join(nval* x, nval* y);
 nval* nval_copy(nval* v);
 char* ntype_name(int t);
-
-/* Builtin functions and operations */
-void nenv_add_builtin(nenv *e, char* name, nbuiltin func);
-void nenv_add_builtins(nenv* e);
-/* Arithmatic operations */
-nval* builtin_op(nenv* e, nval* a, char* op);
-nval* builtin_add(nenv* e, nval* a);
-nval* builtin_sub(nenv* e, nval* a);
-nval* builtin_mul(nenv* e, nval* a);
-nval* builtin_div(nenv* e, nval* a);
-
-/* Q-Expression functions */
-nval* builtin_head(nenv* e, nval* a);
-nval* builtin_tail(nenv* e, nval* a);
-nval* builtin_list(nenv* e, nval* a);
-nval* builtin_eval(nenv* e, nval* a);
-nval* builtin_join(nenv* e, nval* a);
-
-nval* builtin_def(nenv* e, nval* a);
-nval* builtin_put(nenv* e, nval* a);
-nval* builtin_var(nenv* e, nval* a, char* func);
-nval* builtin_undef(nenv* e, nval* a);
-nval* builtin_lambda(nenv* e, nval* a);
 
 /* Core print statements */
 void nval_print(nval* v);

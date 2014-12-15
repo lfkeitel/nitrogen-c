@@ -5,7 +5,7 @@
 #include "mpc.h"
 
 #include "ncore.h"
-#include "nstdlib.h"
+#include "builtins.h"
 
 /* Windows doesn't use the editline library */
 #ifdef _WIN32
