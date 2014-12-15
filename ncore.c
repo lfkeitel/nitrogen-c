@@ -29,6 +29,7 @@
 /* Constuctor and destructor for environment types */
 nenv* nenv_new(void) {
     nenv* e = malloc(sizeof(nenv));
+    e->par = NULL;
     e->count = 0;
     e->syms = NULL;
     e->vals = NULL;
@@ -52,6 +53,11 @@ nval* nenv_get(nenv* e, nval* k) {
             return nval_copy(e->vals[i]);
         }
     }
+
+    /* Check all parent environments if symbol not found */
+    if (e->par) {
+        return nenv_get(e->par, k);
+    }
     return nval_err("Symbol '%s' not declared", k->sym);
 }
 
@@ -73,6 +79,38 @@ void nenv_put(nenv* e, nval* k, nval* v) {
     e->vals[e->count-1] = nval_copy(v);
     e->syms[e->count-1] = malloc(strlen(k->sym)+1);
     strcpy(e->syms[e->count-1], k->sym);
+}
+
+void nenv_rem(nenv* e, nval* k) {
+    /* Check if variable already exists */
+    for (int i = 0; i < e->count; i++) {
+        if (strcmp(e->syms[i], k->sym) == 0) {
+            free(e->syms[i]);
+            nval_del(e->vals[i]);
+            /*e->vals[i] = nval_copy(v);*/
+            return;
+        }
+    }
+    return;
+}
+
+nenv* nenv_copy(nenv* e) {
+    nenv* n = malloc(sizeof(nenv));
+    n->par = e->par;
+    n->count = e->count;
+    n->syms = malloc(sizeof(char*) * n->count);
+    n->vals = malloc(sizeof(nval*) * n->count);
+    for (int i = 0; i < e->count; i++) {
+        n->syms[i] = malloc(strlen(e->syms[i]) + 1);
+        strcpy(n->syms[i], e->syms[i]);
+        n->vals[i] = nval_copy(e->vals[i]);
+    }
+    return n;
+}
+
+void nenv_def(nenv* e, nval* k, nval* v) {
+    while (e->par) { e = e->par; }
+    nenv_put(e, k, v);
 }
 
 /* Constructor functions for nval types */
@@ -133,7 +171,17 @@ nval* nval_qexpr(void) {
 nval* nval_fun(nbuiltin func) {
     nval* v = malloc(sizeof(nval));
     v->type = NVAL_FUN;
-    v->fun = func;
+    v->builtin = func;
+    return v;
+}
+
+nval* nval_lambda(nval* formals, nval* body) {
+    nval* v = malloc(sizeof(nval));
+    v->type = NVAL_FUN;
+    v->builtin = NULL;
+    v->env = nenv_new();
+    v->formals = formals;
+    v->body = body;
     return v;
 }
 
@@ -142,7 +190,6 @@ void nval_del(nval* v) {
     switch (v->type) {
         /* Number and function, nothing special */
         case NVAL_NUM: break;
-        case NVAL_FUN: break;
         /* err and sym are strings with malloc */
         case NVAL_ERR: free(v->err); break;
         case NVAL_SYM: free(v->sym); break;
@@ -155,6 +202,15 @@ void nval_del(nval* v) {
             }
             /* Free mem to contain the pointers */
             free(v->cell);
+        break;
+
+        /* User defined functions */
+        case NVAL_FUN:
+            if (!v->builtin) {
+                nenv_del(v->env);
+                nval_del(v->formals);
+                nval_del(v->body);
+            }
         break;
     }
     /* Free mem allocated for v itself */
@@ -195,7 +251,6 @@ nval* nval_copy(nval* v) {
     x->type = v->type;
 
     switch (v->type) {
-        case NVAL_FUN: x->fun = v->fun; break;
         case NVAL_NUM: x->num = v->num; break;
 
         case NVAL_ERR:
@@ -211,6 +266,17 @@ nval* nval_copy(nval* v) {
             x->cell = malloc(sizeof(nval*) * x->count);
             for (int i = 0; i < x->count; i++) {
                 x->cell[i] = nval_copy(v->cell[i]);
+            }
+        break;
+
+        case NVAL_FUN:
+            if (v->builtin) {
+                x->builtin = v->builtin;
+            } else {
+                x->builtin = NULL;
+                x->env = nenv_copy(v->env);
+                x->formals = nval_copy(v->formals);
+                x->body = nval_copy(v->body);
             }
         break;
     }
@@ -240,6 +306,9 @@ void nenv_add_builtin(nenv* e, char* name, nbuiltin func) {
 void nenv_add_builtins(nenv* e) {
     /* Variable Functions */
     nenv_add_builtin(e, "def", builtin_def);
+    nenv_add_builtin(e, "undef", builtin_undef);
+    nenv_add_builtin(e, "=", builtin_put);
+    nenv_add_builtin(e, "\\", builtin_lambda);
 
     /* List Functions */
     nenv_add_builtin(e, "list", builtin_list);
@@ -371,23 +440,77 @@ nval* builtin_join(nenv* e, nval* a) {
 }
 
 nval* builtin_def(nenv* e, nval* a) {
+    return builtin_var(e, a, "def");
+}
+
+nval* builtin_put(nenv* e, nval* a) {
+    return builtin_var(e, a, "=");
+}
+
+nval* builtin_var(nenv* e, nval* a, char* func) {
+    LASSERT_TYPE(func, a, 0, NVAL_QEXPR);
+
+    nval* syms = a->cell[0];
+    for (int i = 0; i < syms->count; i++) {
+        LASSERT(a, (syms->cell[i]->type == NVAL_SYM),
+          "Function '%s' cannot define non-symbol. "
+          "Got %s, Expected %s.", func, 
+          ntype_name(syms->cell[i]->type),
+          ntype_name(NVAL_SYM));
+    }
+
+    LASSERT(a, (syms->count == a->count-1),
+        "Function '%s' passed too many arguments for symbols. "
+        "Got %i, Expected %i.", func, syms->count, a->count-1);
+
+    for (int i = 0; i < syms->count; i++) {
+        /* If 'def' define in globally. If 'put' define in locally */
+        if (strcmp(func, "def") == 0) {
+            nenv_def(e, syms->cell[i], a->cell[i+1]);
+        }
+
+        if (strcmp(func, "=")   == 0) {
+            nenv_put(e, syms->cell[i], a->cell[i+1]);
+        } 
+    }
+
+    nval_del(a);
+    return nval_sexpr();
+}
+
+nval* builtin_undef(nenv* e, nval* a) {
     LASSERT(a, a->cell[0]->type == NVAL_QEXPR,
-        "Function 'def' passed incorrect type");
+        "Function 'undef' passed incorrect type");
 
     nval* syms = a->cell[0];
     for (int i = 0; i < syms->count; i++) {
         LASSERT(a, syms->cell[i]->type == NVAL_SYM,
-            "Function 'def' cannot define non-symbol");
+            "Function 'undef' cannot define non-symbol");
     }
 
-    LASSERT(a, syms->count == a->count -1,
-        "Function 'def' cannot define incorrect number of values to symbols");
+    LASSERT_NUM("undef", a, 1);
 
     for (int i = 0; i < syms->count; i++) {
-        nenv_put(e, syms->cell[i], a->cell[i+1]);
+        nenv_rem(e, syms->cell[i]);
     }
     nval_del(a);
     return nval_sexpr();
+}
+
+nval* builtin_lambda(nenv* e, nval* a) {
+    LASSERT_NUM("\\", a, 2);
+    LASSERT_TYPE("\\", a, 0, NVAL_QEXPR);
+    LASSERT_TYPE("\\", a, 1, NVAL_QEXPR);
+
+    for (int i = 0; i < a->cell[0]->count; i++) {
+        LASSERT(a, (a->cell[0]->cell[i]->type == NVAL_SYM),
+            ntype_name(a->cell[0]->cell[i]->type), ntype_name(NVAL_SYM));
+    }
+
+    nval* formals = nval_pop(a, 0);
+    nval* body = nval_pop(a, 0);
+    nval_del(a);
+    return nval_lambda(formals, body);
 }
 
 /* Core print statements */
@@ -398,7 +521,13 @@ void nval_print(nval* v) {
         case NVAL_SYM:   printf("%s", v->sym); break;
         case NVAL_SEXPR: nval_expr_print(v, '(', ')'); break;
         case NVAL_QEXPR: nval_expr_print(v, '{', '}'); break;
-        case NVAL_FUN:   printf("<function>"); break;
+        case NVAL_FUN:
+            if (v->builtin) {
+                printf("<builtin>");
+            } else {
+                printf("(\\ "); nval_print(v->formals);
+                putchar(' '); nval_print(v->body); putchar(')');
+            }
     }
 }
 
@@ -444,16 +573,74 @@ nval* nval_eval_sexpr(nenv* e, nval* v) {
     }
 
     if (v->count == 0) { return v; }
-
     if (v->count == 1) { return nval_take(v, 0); }
 
     nval* f = nval_pop(v, 0);
     if (f->type != NVAL_FUN) {
+        nval* err = nval_err(
+            "S-Expression starts with incorrect type. "
+            "Got %s, Expected %s.",
+            ntype_name(f->type), ntype_name(NVAL_FUN));
         nval_del(f); nval_del(v);
-        return nval_err("First element is not a function");
+        return err;
     }
 
-    nval* result = f->fun(e, v);
+    nval* result = nval_call(e, f, v);
     nval_del(f);
     return result;
+}
+
+nval* nval_call(nenv* e, nval* f, nval* a) {
+    if (f->builtin) { return f->builtin(e, a); }
+
+    int given = a->count;
+    int total = f->formals->count;
+
+    while (a->count) {
+        if (f->formals->count == 0) {
+            nval_del(a);
+            return nval_err(
+                "Function passed too many arguments. "
+                "Got %i, Expected %i.", given, total); 
+        }
+
+        nval* sym = nval_pop(f->formals, 0);
+        /* Special case to deal with & */
+        if (strcmp(sym->sym, "&") == 0) {
+            if (f->formals->count != 1) {
+                nval_del(a);
+                return nval_err("Function format invalid. Symbol '&' not followed by single symbol.");
+            }
+
+            nval* nsym = nval_pop(f->formals, 0);
+            nenv_put(f->env, nsym, builtin_list(e, a));
+            nval_del(sym); nval_del(nsym);
+            break;
+        }
+        nval* val = nval_pop(a, 0);
+        nenv_put(f->env, sym, val);
+        nval_del(sym); nval_del(val);
+    }
+
+    nval_del(a);
+
+    if (f->formals->count > 0 && strcmp(f->formals->cell[0]->sym, "&") == 0) {
+        if (f->formals->count != 2) {
+            return nval_err("Function format invalid. "
+                "Symbol '&' not followed by single symbol.");
+        }
+
+        nval_del(nval_pop(f->formals, 0));
+        nval* sym = nval_pop(f->formals, 0);
+        nval* val = nval_qexpr();
+        nenv_put(f->env, sym, val);
+        nval_del(sym); nval_del(val);
+    }
+
+    if (f->formals->count == 0) {
+        f->env->par = e;
+        return builtin_eval(f->env, nval_add(nval_sexpr(), nval_copy(f->body)));
+    } else {
+        return nval_copy(f);
+    }
 }

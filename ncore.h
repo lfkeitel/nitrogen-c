@@ -12,15 +12,22 @@ typedef nval*(*nbuiltin)(nenv*, nval*);
 
 struct nval {
     int type;
+
     long num;
     char* err;
     char* sym;
-    nbuiltin fun;
+
+    nbuiltin builtin;
+    nenv* env;
+    nval* formals;
+    nval* body;
+
     int count;
     nval** cell;
 };
 
 struct nenv {
+    nenv* par;
     int count;
     char** syms;
     nval** vals;
@@ -33,6 +40,9 @@ void nenv_del(nenv* e);
 /* environment manipulation functions */
 nval* nenv_get(nenv* e, nval* k);
 void nenv_put(nenv* e, nval* k, nval* v);
+void nenv_rem(nenv* e, nval* k);
+nenv* nenv_copy(nenv* e);
+void nenv_def(nenv* e, nval* k, nval* v);
 
 /* Constructor functions for nval types */
 nval* nval_num(long x);
@@ -41,6 +51,7 @@ nval* nval_sym(char* s);
 nval* nval_sexpr(void);
 nval* nval_qexpr(void);
 nval* nval_fun(nbuiltin func);
+nval* nval_lambda(nval* formals, nval* body);
 
 /* nval manipulation functions */
 void nval_del(nval* v);
@@ -69,6 +80,10 @@ nval* builtin_eval(nenv* e, nval* a);
 nval* builtin_join(nenv* e, nval* a);
 
 nval* builtin_def(nenv* e, nval* a);
+nval* builtin_put(nenv* e, nval* a);
+nval* builtin_var(nenv* e, nval* a, char* func);
+nval* builtin_undef(nenv* e, nval* a);
+nval* builtin_lambda(nenv* e, nval* a);
 
 /* Core print statements */
 void nval_print(nval* v);
@@ -78,5 +93,6 @@ void nval_expr_print(nval* v, char open, char close);
 /* Code evaluation functions */
 nval* nval_eval(nenv* e, nval* v);
 nval* nval_eval_sexpr(nenv* e, nval* v);
+nval* nval_call(nenv* e, nval* f, nval* a);
 
 #endif
