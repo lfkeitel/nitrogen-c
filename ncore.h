@@ -61,6 +61,7 @@ struct nenv {
     int count;
     char** syms;
     nval** vals;
+    bool* protected;
 };
 /* Constuctor and destructor for environment types */
 nenv* nenv_new(void);
@@ -68,10 +69,11 @@ void nenv_del(nenv* e);
 
 /* environment manipulation functions */
 nval* nenv_get(nenv* e, nval* k);
-void nenv_put(nenv* e, nval* k, nval* v);
+bool nenv_put(nenv* e, nval* k, nval* v);
+void nenv_put_protected(nenv* e, nval* k, nval* v);
 void nenv_rem(nenv* e, nval* k);
 nenv* nenv_copy(nenv* e);
-void nenv_def(nenv* e, nval* k, nval* v);
+bool nenv_def(nenv* e, nval* k, nval* v);
 
 /* Constructor functions for nval types */
 nval* nval_num(long x);

@@ -15,6 +15,7 @@ nenv* nenv_new(void) {
     e->count = 0;
     e->syms = NULL;
     e->vals = NULL;
+    e->protected = NULL;
     return e;
 }
 
@@ -43,13 +44,16 @@ nval* nenv_get(nenv* e, nval* k) {
     return nval_err("Symbol '%s' not declared", k->sym);
 }
 
-void nenv_put(nenv* e, nval* k, nval* v) {
+bool nenv_put(nenv* e, nval* k, nval* v) {
     /* Check if variable already exists */
     for (int i = 0; i < e->count; i++) {
         if (strcmp(e->syms[i], k->sym) == 0) {
-            nval_del(e->vals[i]);
-            e->vals[i] = nval_copy(v);
-            return;
+            if (!e->protected[i]) {
+                nval_del(e->vals[i]);
+                e->vals[i] = nval_copy(v);
+                return true;
+            }
+            return false;
         }
     }
 
@@ -60,6 +64,27 @@ void nenv_put(nenv* e, nval* k, nval* v) {
 
     e->vals[e->count-1] = nval_copy(v);
     e->syms[e->count-1] = malloc(strlen(k->sym)+1);
+    strcpy(e->syms[e->count-1], k->sym);
+    return true;
+}
+
+void nenv_put_protected(nenv* e, nval* k, nval* v) {
+    /* Check if variable already exists */
+    for (int i = 0; i < e->count; i++) {
+        if (strcmp(e->syms[i], k->sym) == 0) {
+            return;
+        }
+    }
+
+    /* If not, create it */
+    e->count++;
+    e->vals = realloc(e->vals, sizeof(nval*) * e->count);
+    e->syms = realloc(e->syms, sizeof(char*) * e->count);
+    e->protected = realloc(e->protected, sizeof(bool) * e->count);
+
+    e->vals[e->count-1] = nval_copy(v);
+    e->syms[e->count-1] = malloc(strlen(k->sym)+1);
+    e->protected[e->count-1] = true;
     strcpy(e->syms[e->count-1], k->sym);
 }
 
@@ -91,9 +116,9 @@ nenv* nenv_copy(nenv* e) {
 }
 
 /* Define variable in global scope */
-void nenv_def(nenv* e, nval* k, nval* v) {
+bool nenv_def(nenv* e, nval* k, nval* v) {
     while (e->par) { e = e->par; }
-    nenv_put(e, k, v);
+    return nenv_put(e, k, v);
 }
 
 /* Constructor functions for nval types */

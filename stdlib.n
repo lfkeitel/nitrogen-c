@@ -260,3 +260,6 @@
     (print (strcat "Fatal: " s))
     (exit)
 })
+
+;;; Variable to know the standard library is loaded
+(def {stdlib} true)

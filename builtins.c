@@ -8,7 +8,7 @@
 void nenv_add_builtin(nenv* e, char* name, nbuiltin func) {
     nval* k = nval_sym(name);
     nval* v = nval_fun(func);
-    nenv_put(e, k, v);
+    nenv_put_protected(e, k, v);
     nval_del(k);
     nval_del(v);
 }
@@ -97,7 +97,7 @@ nval* builtin_load(nenv* e, nval* a) {
 /* Builtin arithmatic operations */
 nval* builtin_op(nenv* e, nval* a, char* op) {
     LASSERT_MIN_ARGS(op, a, 2);
-    
+
     for (int i = 0; i < a->count; i++) {
         LASSERT_TYPE(op, a, i, NVAL_NUM);
     }
@@ -261,7 +261,9 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
     for (int i = 0; i < syms->count; i++) {
         /* If 'def' define in globally. If 'put' define in locally */
         if (strcmp(func, "def") == 0) {
-            nenv_def(e, syms->cell[i], a->cell[i+1]);
+            if (!nenv_def(e, syms->cell[i], a->cell[i+1])) {
+                return nval_err("Cannot redefine builtin functions");
+            }
         }
 
         if (strcmp(func, "=")   == 0) {
