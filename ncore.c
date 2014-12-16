@@ -5,6 +5,7 @@
 
 #include "ncore.h"
 #include "builtins.h"
+#include "mpc.h"
 
 /* Constuctor and destructor for environment types */
 nenv* nenv_new(void) {
@@ -165,6 +166,14 @@ nval* nval_lambda(nval* formals, nval* body) {
     return v;
 }
 
+nval* nval_str(char* s) {
+    nval* v = malloc(sizeof(nval));
+    v->type = NVAL_STR;
+    v->str = malloc(strlen(s)+1);
+    strcpy(v->str, s);
+    return v;
+}
+
 /* nval manipulation functions */
 void nval_del(nval* v) {
     switch (v->type) {
@@ -173,6 +182,7 @@ void nval_del(nval* v) {
         /* err and sym are strings with malloc */
         case NVAL_ERR: free(v->err); break;
         case NVAL_SYM: free(v->sym); break;
+        case NVAL_STR: free(v->str); break;
 
         /* S/Q-expression, delete all elements inside */
         case NVAL_QEXPR:
@@ -239,6 +249,9 @@ nval* nval_copy(nval* v) {
         case NVAL_SYM:
             x->sym = malloc(strlen(v->sym)+1);
             strcpy(x->sym, v->sym); break;
+        case NVAL_STR:
+            x->str = malloc(strlen(v->str)+1);
+            strcpy(x->str, v->str); break;
 
         case NVAL_SEXPR:
         case NVAL_QEXPR:
@@ -271,6 +284,7 @@ char* ntype_name(int t) {
         case NVAL_SYM: return "Symbol";
         case NVAL_SEXPR: return "S-Expression";
         case NVAL_QEXPR: return "Q-Expression";
+        case NVAL_STR: return "String";
         default: return "Unknown";
     }
 }
@@ -283,6 +297,7 @@ void nval_print(nval* v) {
         case NVAL_SYM:   printf("%s", v->sym); break;
         case NVAL_SEXPR: nval_expr_print(v, '(', ')'); break;
         case NVAL_QEXPR: nval_expr_print(v, '{', '}'); break;
+        case NVAL_STR: nval_print_str(v); break;
         case NVAL_FUN:
             if (v->builtin) {
                 printf("<builtin>");
@@ -308,6 +323,14 @@ void nval_expr_print(nval* v, char open, char close) {
         }
     }
     putchar(close);
+}
+
+void nval_print_str(nval* v) {
+    char* escaped = malloc(strlen(v->str)+1);
+    strcpy(escaped, v->str);
+    escaped = mpcf_escape(escaped);
+    printf("\"%s\"", escaped);
+    free(escaped);
 }
 
 /* Code evaluation functions */

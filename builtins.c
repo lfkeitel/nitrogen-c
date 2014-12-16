@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "mpc.h"
 #include "builtins.h"
 #include "ncore.h"
 
@@ -13,6 +14,10 @@ void nenv_add_builtin(nenv* e, char* name, nbuiltin func) {
 }
 
 void nenv_add_builtins(nenv* e) {
+    nenv_add_builtin(e, "load", builtin_load);
+    nenv_add_builtin(e, "print", builtin_print);
+    nenv_add_builtin(e, "error", builtin_error);
+
     /* Variables and functions */
     nenv_add_builtin(e, "def", builtin_def);
     nenv_add_builtin(e, "undef", builtin_undef);
@@ -40,6 +45,48 @@ void nenv_add_builtins(nenv* e) {
     nenv_add_builtin(e, "<",  builtin_lt);
     nenv_add_builtin(e, ">=", builtin_ge);
     nenv_add_builtin(e, "<=", builtin_le);
+}
+
+nval* builtin_load(nenv* e, nval* a) {
+  LASSERT_NUM("load", a, 1);
+  LASSERT_TYPE("load", a, 0, NVAL_STR);
+  
+  /* Parse File given by string name */
+  mpc_result_t r;
+  if (mpc_parse_contents(a->cell[0]->str, Nitrogen, &r)) {
+    
+    /* Read contents */
+    nval* expr = nval_read(r.output);
+    mpc_ast_delete(r.output);
+
+    /* Evaluate each Expression */
+    while (expr->count) {
+      nval* x = nval_eval(e, nval_pop(expr, 0));
+      /* If Evaluation leads to error print it */
+      if (x->type == NVAL_ERR) { nval_println(x); }
+      nval_del(x);
+    }
+    
+    /* Delete expressions and arguments */
+    nval_del(expr);    
+    nval_del(a);
+    
+    /* Return empty list */
+    return nval_sexpr();
+    
+  } else {
+    /* Get Parse Error as String */
+    char* err_msg = mpc_err_string(r.error);
+    mpc_err_delete(r.error);
+    
+    /* Create new error message using it */
+    nval* err = nval_err("Could not load Library %s", err_msg);
+    free(err_msg);
+    nval_del(a);
+    
+    /* Cleanup and return error */
+    return err;
+  }
 }
 
 /* Builtin arithmatic operations */
@@ -276,6 +323,7 @@ int nval_eq(nval* x, nval* y) {
 
     case NVAL_ERR: return (strcmp(x->err, y->err) == 0);
     case NVAL_SYM: return (strcmp(x->sym, y->sym) == 0);
+    case NVAL_STR: return (strcmp(x->str, y->str) == 0);
 
     case NVAL_FUN:
       if (x->builtin || y->builtin) {
@@ -336,4 +384,21 @@ nval* builtin_if(nenv* e, nval* a) {
 
     nval_del(a);
     return x;
+}
+
+nval* builtin_print(nenv* e, nval* a) {
+    for (int i = 0; i < a->count; i++) {
+        nval_print(a->cell[i]); putchar(' ');
+    }
+    putchar('\n');
+    nval_del(a);
+    return nval_sexpr();
+}
+
+nval* builtin_error(nenv* e, nval* a) {
+    LASSERT_NUM("error", a, 1);
+    LASSERT_TYPE("error", a, 0, NVAL_STR);
+    nval* err = nval_err(a->cell[0]->str);
+    nval_del(a);
+    return err;
 }

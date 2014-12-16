@@ -27,7 +27,7 @@ struct nenv;
 typedef struct nval nval;
 typedef struct nenv nenv;
 
-enum { NVAL_NUM, NVAL_ERR, NVAL_SYM, NVAL_SEXPR, NVAL_QEXPR, NVAL_FUN };
+enum { NVAL_NUM, NVAL_ERR, NVAL_SYM, NVAL_STR, NVAL_SEXPR, NVAL_QEXPR, NVAL_FUN };
 
 typedef nval*(*nbuiltin)(nenv*, nval*);
 
@@ -37,6 +37,7 @@ struct nval {
     long num;
     char* err;
     char* sym;
+    char* str;
 
     nbuiltin builtin;
     nenv* env;
@@ -72,6 +73,7 @@ nval* nval_sexpr(void);
 nval* nval_qexpr(void);
 nval* nval_fun(nbuiltin func);
 nval* nval_lambda(nval* formals, nval* body);
+nval* nval_str(char* s);
 
 /* nval manipulation functions */
 void nval_del(nval* v);
@@ -86,6 +88,7 @@ char* ntype_name(int t);
 void nval_print(nval* v);
 void nval_println(nval* v);
 void nval_expr_print(nval* v, char open, char close);
+void nval_print_str(nval* v);
 
 /* Code evaluation functions */
 nval* nval_eval(nenv* e, nval* v);
