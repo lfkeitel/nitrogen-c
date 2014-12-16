@@ -252,3 +252,11 @@
         }
         {nil})
 })
+
+;;; Errors
+
+; Fatal error
+(fun {fatal s} {do
+    (print (strcat "Fatal: " s))
+    (exit)
+})
