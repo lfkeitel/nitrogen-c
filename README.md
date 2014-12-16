@@ -1,26 +1,27 @@
 Nitrogen v0.1.0
 ================
 
-Nitrogen is a Lisp-based programming language. Please not this version is not complete and many things may change that can/will break other things. You have been warned.
+Nitrogen is a Lisp-based programming language. Please note, this version is not complete and many things may change that can/will break other things. You have been warned.
 
 Requirements for Building From Source
 -------------------------------------
 
-* GCC
+* gcc
 * build-essential
-* libedit-dev library
+* libedit-dev
 
 To build the Nitrogen Interpreter
 ---------------------------------
 
-1. Clone repo [https://github.com/dragonrider23/nitrogen](https://github.com/dragonrider23/nitrogen)
-2. In a terminal, run 'make'
-3. Run the interpreter with './nitrogen'
+1. git clone [https://github.com/dragonrider23/nitrogen](https://github.com/dragonrider23/nitrogen)
+2. cd nitrogen
+3. make
+4. ./nitrogen
 
 Language Documentation
 ----------------------
 
-Language documentation coming soon but when available can be found at [onesimussystems.com/nitrogen](http://onesimussystems.com/nitrogen).
+Language documentation coming soon but when available can be found at [http://onesimussystems.com/nitrogen](http://onesimussystems.com/nitrogen).
 
 Versioning
 ----------
