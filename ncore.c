@@ -68,11 +68,11 @@ bool nenv_put(nenv* e, nval* k, nval* v) {
     return true;
 }
 
-void nenv_put_protected(nenv* e, nval* k, nval* v) {
+bool nenv_put_protected(nenv* e, nval* k, nval* v) {
     /* Check if variable already exists */
     for (int i = 0; i < e->count; i++) {
         if (strcmp(e->syms[i], k->sym) == 0) {
-            return;
+            return false;
         }
     }
 
@@ -86,6 +86,7 @@ void nenv_put_protected(nenv* e, nval* k, nval* v) {
     e->syms[e->count-1] = malloc(strlen(k->sym)+1);
     e->protected[e->count-1] = true;
     strcpy(e->syms[e->count-1], k->sym);
+    return true;
 }
 
 void nenv_rem(nenv* e, nval* k) {

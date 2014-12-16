@@ -21,6 +21,7 @@ void nenv_add_builtins(nenv* e) {
 
     /* Variables and functions */
     nenv_add_builtin(e, "def", builtin_def);
+    nenv_add_builtin(e, "pdef", builtin_pdef);
     nenv_add_builtin(e, "undef", builtin_undef);
     nenv_add_builtin(e, "\\", builtin_lambda);
     nenv_add_builtin(e, "=", builtin_put);
@@ -238,6 +239,10 @@ nval* builtin_def(nenv* e, nval* a) {
     return builtin_var(e, a, "def");
 }
 
+nval* builtin_pdef(nenv* e, nval* a) {
+    return builtin_var(e, a, "pdef");
+}
+
 nval* builtin_put(nenv* e, nval* a) {
     return builtin_var(e, a, "=");
 }
@@ -262,7 +267,13 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
         /* If 'def' define in globally. If 'put' define in locally */
         if (strcmp(func, "def") == 0) {
             if (!nenv_def(e, syms->cell[i], a->cell[i+1])) {
-                return nval_err("Cannot redefine builtin functions");
+                return nval_err("Cannot redefine protected functions");
+            }
+        }
+
+        if (strcmp(func, "pdef") == 0) {
+            if (!nenv_put_protected(e, syms->cell[i], a->cell[i+1])) {
+                return nval_err("Cannot redefine protected functions");
             }
         }
 

@@ -70,7 +70,7 @@ void nenv_del(nenv* e);
 /* environment manipulation functions */
 nval* nenv_get(nenv* e, nval* k);
 bool nenv_put(nenv* e, nval* k, nval* v);
-void nenv_put_protected(nenv* e, nval* k, nval* v);
+bool nenv_put_protected(nenv* e, nval* k, nval* v);
 void nenv_rem(nenv* e, nval* k);
 nenv* nenv_copy(nenv* e);
 bool nenv_def(nenv* e, nval* k, nval* v);
