@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
     nenv_add_builtins(e);
 
     if (argc == 1) {
-        puts("Nitrogen Version 1.0.0");
+        puts("Nitrogen Version 0.1.0");
         puts("Press Ctrl+c to Exit\n");
 
         while (1) {
