@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 #include "ncore.h"
 #include "builtins.h"
@@ -174,11 +175,19 @@ nval* nval_str(char* s) {
     return v;
 }
 
+nval* nval_ok(void) {
+    nval* v = malloc(sizeof(nval));
+    v->type = NVAL_OK;
+    v->ok = true;
+    return v;
+}
+
 /* nval manipulation functions */
 void nval_del(nval* v) {
     switch (v->type) {
         /* Number and function, nothing special */
         case NVAL_NUM: break;
+        case NVAL_OK:  break;
         /* err and sym are strings with malloc */
         case NVAL_ERR: free(v->err); break;
         case NVAL_SYM: free(v->sym); break;
@@ -242,6 +251,7 @@ nval* nval_copy(nval* v) {
 
     switch (v->type) {
         case NVAL_NUM: x->num = v->num; break;
+        case NVAL_OK:  x->ok = v->ok; break;
 
         case NVAL_ERR:
             x->err = malloc(strlen(v->err)+1);
@@ -285,6 +295,7 @@ char* ntype_name(int t) {
         case NVAL_SEXPR: return "S-Expression";
         case NVAL_QEXPR: return "Q-Expression";
         case NVAL_STR: return "String";
+        case NVAL_OK: return "Ok";
         default: return "Unknown";
     }
 }
@@ -295,6 +306,13 @@ void nval_print(nval* v) {
         case NVAL_NUM:   printf("%li", v->num); break;
         case NVAL_ERR:   printf("Error: %s", v->err); break;
         case NVAL_SYM:   printf("%s", v->sym); break;
+        case NVAL_OK:
+            if (v->ok) {
+                printf("Ok");
+            } else {
+                printf("Not ok");
+            }
+            break;
         case NVAL_SEXPR: nval_expr_print(v, '(', ')'); break;
         case NVAL_QEXPR: nval_expr_print(v, '{', '}'); break;
         case NVAL_STR: nval_print_str(v); break;

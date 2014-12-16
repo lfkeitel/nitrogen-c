@@ -1,5 +1,6 @@
 #ifndef ncore
 #define ncore
+#include <stdbool.h>
 
 #define LASSERT(args, cond, fmt, ...) \
     if (!(cond)) { \
@@ -27,7 +28,7 @@ struct nenv;
 typedef struct nval nval;
 typedef struct nenv nenv;
 
-enum { NVAL_NUM, NVAL_ERR, NVAL_SYM, NVAL_STR, NVAL_SEXPR, NVAL_QEXPR, NVAL_FUN };
+enum { NVAL_NUM, NVAL_ERR, NVAL_SYM, NVAL_STR, NVAL_SEXPR, NVAL_QEXPR, NVAL_FUN, NVAL_OK };
 
 typedef nval*(*nbuiltin)(nenv*, nval*);
 
@@ -43,6 +44,7 @@ struct nval {
     nenv* env;
     nval* formals;
     nval* body;
+    bool ok;
 
     int count;
     nval** cell;
@@ -74,6 +76,7 @@ nval* nval_qexpr(void);
 nval* nval_fun(nbuiltin func);
 nval* nval_lambda(nval* formals, nval* body);
 nval* nval_str(char* s);
+nval* nval_ok(void);
 
 /* nval manipulation functions */
 void nval_del(nval* v);

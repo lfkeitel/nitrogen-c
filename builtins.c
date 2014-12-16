@@ -72,7 +72,7 @@ nval* builtin_load(nenv* e, nval* a) {
     nval_del(a);
     
     /* Return empty list */
-    return nval_sexpr();
+    return nval_ok();
     
   } else {
     /* Get Parse Error as String */
@@ -238,7 +238,7 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
     }
 
     nval_del(a);
-    return nval_sexpr();
+    return nval_ok();
 }
 
 nval* builtin_undef(nenv* e, nval* a) {
@@ -257,7 +257,7 @@ nval* builtin_undef(nenv* e, nval* a) {
         nenv_rem(e, syms->cell[i]);
     }
     nval_del(a);
-    return nval_sexpr();
+    return nval_ok();
 }
 
 nval* builtin_lambda(nenv* e, nval* a) {
@@ -392,7 +392,7 @@ nval* builtin_print(nenv* e, nval* a) {
     }
     putchar('\n');
     nval_del(a);
-    return nval_sexpr();
+    return nval_ok();
 }
 
 nval* builtin_error(nenv* e, nval* a) {
