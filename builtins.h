@@ -25,6 +25,8 @@ nval* builtin_list(nenv* e, nval* a);
 nval* builtin_eval(nenv* e, nval* a);
 nval* builtin_join(nenv* e, nval* a);
 
+nval* builtin_strconcat(nenv* e, nval* a);
+
 /* Variable and functions definitions */
 nval* builtin_def(nenv* e, nval* a);
 nval* builtin_put(nenv* e, nval* a);

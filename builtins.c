@@ -31,6 +31,8 @@ void nenv_add_builtins(nenv* e) {
     nenv_add_builtin(e, "eval", builtin_eval);
     nenv_add_builtin(e, "join", builtin_join);
 
+    nenv_add_builtin(e, "strcat", builtin_strconcat);
+
     /* Mathematical Functions */
     nenv_add_builtin(e, "+", builtin_add);
     nenv_add_builtin(e, "-", builtin_sub);
@@ -200,6 +202,31 @@ nval* builtin_join(nenv* e, nval* a) {
     }
     nval_del(a);
     return x;
+}
+
+/* String concatenation */
+nval* builtin_strconcat(nenv* e, nval* a) {
+    for (int i = 0; i < a->count; i++) {
+        LASSERT(a, a->cell[i]->type == NVAL_STR,
+            "Function 'strcon' was passed incorrect type");
+    }
+
+    int full_length = 0;
+    for (int i = 0; i < a->count; i++) {
+        full_length += strlen(a->cell[i]->str);
+    }
+
+    if (full_length > 0) {
+        char full_string[full_length];
+        strcpy(full_string, a->cell[0]->str);
+        for (int i = 1; i < a->count; i++) {
+            strcat(full_string, a->cell[i]->str);
+        }
+        nval_del(a);
+        return nval_str(full_string);
+    } else {
+        return nval_err("String length is 0");
+    }
 }
 
 nval* builtin_def(nenv* e, nval* a) {
