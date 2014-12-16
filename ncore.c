@@ -90,6 +90,7 @@ nenv* nenv_copy(nenv* e) {
     return n;
 }
 
+/* Define variable in global scope */
 void nenv_def(nenv* e, nval* k, nval* v) {
     while (e->par) { e = e->par; }
     nenv_put(e, k, v);
@@ -179,6 +180,12 @@ nval* nval_ok(void) {
     nval* v = malloc(sizeof(nval));
     v->type = NVAL_OK;
     v->ok = true;
+    return v;
+}
+
+nval* nval_quit(void) {
+    nval* v = malloc(sizeof(nval));
+    v->type = NVAL_QUIT;
     return v;
 }
 
@@ -296,6 +303,7 @@ char* ntype_name(int t) {
         case NVAL_QEXPR: return "Q-Expression";
         case NVAL_STR: return "String";
         case NVAL_OK: return "Ok";
+        case NVAL_QUIT: return "Exit command";
         default: return "Unknown";
     }
 }
@@ -376,7 +384,11 @@ nval* nval_eval_sexpr(nenv* e, nval* v) {
     }
 
     if (v->count == 0) { return v; }
-    if (v->count == 1) { return nval_take(v, 0); }
+    if (v->count == 1) {
+        if (v->cell[0]->type != NVAL_FUN) {
+            return nval_take(v, 0);
+        }
+    }
 
     nval* f = nval_pop(v, 0);
     if (f->type != NVAL_FUN) {

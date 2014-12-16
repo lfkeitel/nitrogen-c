@@ -19,6 +19,11 @@
         "Function '%s' passed incorrect number of arguments. Got %i, Expected %i.", \
         func, args->count, num)
 
+#define LASSERT_MIN_ARGS(func, args, num) \
+    LASSERT(args, args->count >= num, \
+        "Function '%s' passed incorrect number of arguments. Got %i, Needs at least %i.", \
+        func, args->count, num)
+
 #define LASSERT_NOT_EMPTY(func, args, index) \
     LASSERT(args, args->cell[index]->count != 0, \
         "Function '%s' passed {} for argument %i.", func, index);
@@ -28,7 +33,8 @@ struct nenv;
 typedef struct nval nval;
 typedef struct nenv nenv;
 
-enum { NVAL_NUM, NVAL_ERR, NVAL_SYM, NVAL_STR, NVAL_SEXPR, NVAL_QEXPR, NVAL_FUN, NVAL_OK };
+enum { NVAL_NUM, NVAL_ERR, NVAL_SYM, NVAL_STR, NVAL_SEXPR, NVAL_QEXPR, NVAL_FUN, NVAL_OK, NVAL_QUIT };
+/* Notes: NVAL_QUIT is a special type that when encountered will stop execution and close the interpreter. It holds no value. */
 
 typedef nval*(*nbuiltin)(nenv*, nval*);
 
@@ -77,6 +83,7 @@ nval* nval_fun(nbuiltin func);
 nval* nval_lambda(nval* formals, nval* body);
 nval* nval_str(char* s);
 nval* nval_ok(void);
+nval* nval_quit(void);
 
 /* nval manipulation functions */
 void nval_del(nval* v);

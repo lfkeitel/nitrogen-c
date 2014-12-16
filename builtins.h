@@ -48,5 +48,6 @@ nval* builtin_if(nenv* e, nval* a);
 
 nval* builtin_print(nenv* e, nval* a);
 nval* builtin_error(nenv* e, nval* a);
+nval* builtin_exit(nenv* e, nval* a);
 
 #endif

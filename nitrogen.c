@@ -120,8 +120,18 @@ int main(int argc, char** argv) {
             
             mpc_result_t r;
             if (mpc_parse("<stdin>", input, Nitrogen, &r)) {
+                //mpc_ast_print(r.output);
                 nval* x = nval_eval(e, nval_read(r.output));
-                nval_println(x);
+                /* Test for special NVAL_QUIT type */
+                if (x->type == NVAL_QUIT) {
+                    printf("%s\n", "Quitting Nitrogen Interpreter");
+                    nval_del(x);
+                    mpc_ast_delete(r.output);
+                    free(input);
+                    break;
+                } else {
+                    nval_println(x);
+                }
                 nval_del(x);
                 mpc_ast_delete(r.output);
             } else {

@@ -17,6 +17,7 @@ void nenv_add_builtins(nenv* e) {
     nenv_add_builtin(e, "load", builtin_load);
     nenv_add_builtin(e, "print", builtin_print);
     nenv_add_builtin(e, "error", builtin_error);
+    nenv_add_builtin(e, "exit", builtin_exit);
 
     /* Variables and functions */
     nenv_add_builtin(e, "def", builtin_def);
@@ -66,6 +67,8 @@ nval* builtin_load(nenv* e, nval* a) {
       nval* x = nval_eval(e, nval_pop(expr, 0));
       /* If Evaluation leads to error print it */
       if (x->type == NVAL_ERR) { nval_println(x); }
+      /* Special case for NVAL_QUIT type */
+      if (x->type == NVAL_QUIT) { nval_del(x); break; }
       nval_del(x);
     }
     
@@ -93,6 +96,8 @@ nval* builtin_load(nenv* e, nval* a) {
 
 /* Builtin arithmatic operations */
 nval* builtin_op(nenv* e, nval* a, char* op) {
+    LASSERT_MIN_ARGS(op, a, 2);
+    
     for (int i = 0; i < a->count; i++) {
         LASSERT_TYPE(op, a, i, NVAL_NUM);
     }
@@ -428,4 +433,9 @@ nval* builtin_error(nenv* e, nval* a) {
     nval* err = nval_err(a->cell[0]->str);
     nval_del(a);
     return err;
+}
+
+nval* builtin_exit(nenv* e, nval* a) {
+    nval_del(a);
+    return nval_quit();
 }
