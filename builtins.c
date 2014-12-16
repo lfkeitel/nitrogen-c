@@ -438,6 +438,7 @@ nval* builtin_error(nenv* e, nval* a) {
 }
 
 nval* builtin_exit(nenv* e, nval* a) {
+    nval_println(a);
     nval_del(a);
     return nval_quit();
 }
