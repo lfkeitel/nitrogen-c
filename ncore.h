@@ -74,6 +74,7 @@ bool nenv_put_protected(nenv* e, nval* k, nval* v);
 void nenv_rem(nenv* e, nval* k);
 nenv* nenv_copy(nenv* e);
 bool nenv_def(nenv* e, nval* k, nval* v);
+bool nenv_def_protected(nenv* e, nval* k, nval* v);
 
 /* Constructor functions for nval types */
 nval* nval_num(long x);

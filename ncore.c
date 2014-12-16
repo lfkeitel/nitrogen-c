@@ -122,6 +122,11 @@ bool nenv_def(nenv* e, nval* k, nval* v) {
     return nenv_put(e, k, v);
 }
 
+bool nenv_def_protected(nenv* e, nval* k, nval* v) {
+    while (e->par) { e = e->par; }
+    return nenv_put_protected(e, k, v);
+}
+
 /* Constructor functions for nval types */
 nval* nval_num(long x) {
     nval* v = malloc(sizeof(nval));

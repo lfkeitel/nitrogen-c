@@ -272,7 +272,7 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
         }
 
         if (strcmp(func, "pdef") == 0) {
-            if (!nenv_put_protected(e, syms->cell[i], a->cell[i+1])) {
+            if (!nenv_def_protected(e, syms->cell[i], a->cell[i+1])) {
                 return nval_err("Cannot redefine protected functions");
             }
         }
