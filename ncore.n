@@ -1,0 +1,258 @@
+;;;
+;;; Core Nitrogen Operators and Functions
+;;;
+
+;;; Atoms
+(pdef {nil} {})
+(pdef {true} 1)
+(pdef {false} 0)
+
+;;; Functional Functions
+
+; Protected Function Definitions
+(pdef {pfun} (\ {f b} {
+    pdef (head f) (\ (tail f) b)
+}))
+
+; Normal Function Definitions
+(pfun {fun f b} {
+    def (head f) (\ (tail f) b)
+})
+
+; Open new scope
+(pfun {let b} {
+    ((\ {_} b) ())
+})
+
+; Unpack List for Function
+(pfun {unpack f l} {
+    eval (join (list f) l)
+})
+
+; Unapply List for Function
+(pfun {pack f & xs} {f xs})
+
+; Curried and Uncurried calling
+(pdef {curry} unpack)
+(pdef {uncurry} pack)
+
+; Performs several things in sequence
+(pfun {do & l} {
+    if (== l nil)
+        {nil}
+        {last l}
+})
+
+;;; Logical Functions
+
+; Logical Functions
+(pfun {not x}   {- 1 x})
+(pfun {or x y}  {+ x y})
+(pfun {and x y} {* x y})
+
+;;; Numerical Operators
+
+; Add one to variable
+(pfun {++ n} {
+    def (head n) (+ (eval n) 1)
+})
+
+; Add one to variable
+(pfun {-- n} {
+    def (head n) (- (eval n) 1)
+})
+
+;;; Conditional Functions
+
+; Select statement
+(pfun {select & cs} {
+    if (== cs nil)
+        {error "No Selection Found"}
+        {if (fst (fst cs)) {snd (fst cs)} {unpack select (tail cs)}}
+})
+
+; Case statement
+(pfun {case x & cs} {
+    if (== cs nil)
+        {error "No Case Found"}
+        {if (== x (fst (fst cs))) {snd (fst cs)} {
+            unpack case (join (list x) (tail cs))}}
+})
+
+(pdef {otherwise} true)
+
+;;; List Functions
+
+; First, second, or third item in a list
+(pfun {fst l} { eval (head l) })
+(pfun {snd l} { eval (head (tail l)) })
+(pfun {trd l} { eval (head (tail (tail l))) })
+
+; List length
+(pfun {len l} {
+    if (== l nil)
+        {0}
+        {+ 1 (len (tail l))}
+})
+
+; Nth item in list
+(pfun {nth n l} {
+    if (== n 0)
+        {fst l}
+        {nth (- n 1) (tail l)}
+})
+
+; Last item in a list
+(pfun {last l} {nth (- (len l) 1) l})
+
+; Apply function to list
+(pfun {map f l} {
+    if (== l nil)
+        {nil}
+        {join (list (f (fst l))) (map f (tail l))}
+})
+
+; Apply filter to list
+(pfun {filter f l} {
+    if (== l nil)
+        {nil}
+        {join (if (f (fst l)) {head l} {nil}) (filter f (tail l))}
+})
+
+; Return all of list but last element
+(pfun {init l} {
+    if (== (tail l) nil)
+        {nil}
+        {join (head l) (init (tail l))}
+})
+
+; Reverse List
+(pfun {reverse l} {
+    if (== l nil)
+        {nil}
+        {join (reverse (tail l)) (head l)}
+})
+
+; Fold left
+(pfun {foldl f z l} {
+    if (== l nil)
+        {z}
+        {foldl f (f z (fst l)) (tail l)}
+})
+
+; Fold right
+(pfun {foldr f z l} {
+    if (== l nil)
+        {z}
+        {f (fst l) (foldr f z (tail l))}
+})
+
+(pfun {sum l} {foldl + 0 l})
+(pfun {product l} {foldl * 1 l})
+
+; Take N items
+(pfun {take n l} {
+    if (== n 0)
+        {nil}
+        {join (head l) (take (- n 1) (tail l))}
+})
+
+; Drop N items
+(pfun {drop n l} {
+    if (== n 0)
+        {l}
+        {drop (- n 1) (tail l)}
+})
+
+; Split at N
+(pfun {split n l} {
+    list (take n l) (drop n l)
+})
+
+; Take while
+(pfun {take-while f l} {
+    if (not (unpack f (head l)))
+        {nil}
+        {join (head l) (take-while f (tail l))}
+})
+
+; Drop while
+(pfun {drop-while f l} {
+    if (not (unpack f (head l)))
+        {l}
+        {drop-while f (tail l)}
+})
+
+; Element of list
+(pfun {elem x l} {
+    if (== l nil)
+        {false}
+        {if (== x (fst l)) {true} {elem x (tail l)}}
+})
+
+; Find Element in list of pairs
+(pfun {lookup x l} {
+    if (== l nil)
+        {error "No Element Found"}
+        {do
+            (= {key} (fst (fst l)))
+            (= {val} (snd (fst l)))
+            (if (== key x) {val} {lookup x (tail l)})
+        }
+})
+
+; Zip two lists together into a list of pairs
+(pfun {zip x y} {
+    if (or (== x nil) (== y nil))
+        {nil}
+        {join (list (join (head x) (head y))) (zip (tail x) (tail y))}
+})
+
+; Unzip a list of pairs into two lists
+(pfun {unzip l} {
+    if (== l nil)
+        {{nil nil}}
+        {do
+            (= {x} (fst l))
+            (= {xs} (unzip (tail l)))
+            (list (join (head x) (fst xs)) (join (tail x) (snd xs)))
+        }
+})
+
+;;; Loops
+
+; While loop
+(pfun {while c f} {
+    (if (eval c)
+        {do
+            (eval f)
+            (while c f)
+
+        })
+})
+
+; Do while loop
+(pfun {do-while c f} {do
+    (eval f)
+    (if (eval c)
+        {do-while c f}
+        {nil})
+})
+
+; For loop - Convert to a while loop
+(pfun {for fi fc fo ff} {do
+    (if (== (head fi) {=})
+        {error "Can't use {=} in for loop declaration"}
+        {do
+            (eval fi) ; Process initialisation function
+            (= {nff} {do (eval ff) (eval fo)}) ; Combine for-loop body with inc/dec function
+            (while fc nff) ; Call the while loop
+        })
+})
+
+(pfun {stdlib} {
+    load "stdlib.n"
+})
+
+;;; Variable to know the core library is loaded
+(pdef {ncorelib} true)
