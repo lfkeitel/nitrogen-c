@@ -90,15 +90,16 @@ bool nenv_put_protected(nenv* e, nval* k, nval* v) {
 }
 
 void nenv_rem(nenv* e, nval* k) {
-    /* Check if variable already exists */
-    for (int i = 0; i < e->count; i++) {
-        if (strcmp(e->syms[i], k->sym) == 0) {
-            free(e->syms[i]);
-            nval_del(e->vals[i]);
-            /*e->vals[i] = nval_copy(v);*/
-            return;
+    do {
+        for (int i = 0; i < e->count; i++) {
+            if (strcmp(e->syms[i], k->sym) == 0) {
+                free(e->syms[i]);
+                nval_del(e->vals[i]);
+                return;
+            }
         }
-    }
+        e = e->par;
+    } while (e->par);
     return;
 }
 
