@@ -72,6 +72,16 @@
         }
 })
 
+; Add one to variable
+(pfun {++ n} {
+    def (head n) (+ (eval n) 1)
+})
+
+; Add one to variable
+(pfun {-- n} {
+    def (head n) (- (eval n) 1)
+})
+
 ;;; Conditional Functions
 
 ; Select statement
