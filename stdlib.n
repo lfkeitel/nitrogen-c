@@ -268,22 +268,15 @@
         {nil})
 })
 
-; For loop
-(pfun {for fi c o f} {do
-    (eval fi) ; Setup initial variable
-    (for-main c o f) ; Start main loop
-})
-
-; Main for loop function
-(pfun {for-main c o f} {do
-    (if (eval c)
+; For loop - Convert to a while loop
+(pfun {for fi fc fo ff} {do
+    (if (== (head fi) {=})
+        {error "Can't use {=} in for loop declaration"}
         {do
-            (eval f)
-            (eval o)
-            (for-main c o f)
-
-        }
-        {nil})
+            (eval fi) ; Process initialisation function
+            (= {nff} {do (eval ff) (eval fo)}) ; Combine for-loop body with inc/dec function
+            (while fc nff) ; Call the while loop
+        })
 })
 
 ;;; Errors
