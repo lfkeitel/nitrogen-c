@@ -412,19 +412,30 @@ nval* builtin_ne(nenv* e, nval* a) {
 }
 
 nval* builtin_if(nenv* e, nval* a) {
-    LASSERT_NUM("if", a, 3);
+    LASSERT_MIN_ARGS("if", a, 2);
     LASSERT_TYPE("if", a, 0, NVAL_NUM);
     LASSERT_TYPE("if", a, 1, NVAL_QEXPR);
-    LASSERT_TYPE("if", a, 2, NVAL_QEXPR);
+    if (a->count > 2) {
+        LASSERT_TYPE("if", a, 2, NVAL_QEXPR);
+    }
 
     nval* x;
     a->cell[1]->type = NVAL_SEXPR;
-    a->cell[2]->type = NVAL_SEXPR;
+    if (a->count > 2) {
+        a->cell[2]->type = NVAL_SEXPR;
+    }
 
+    /* Only truth evaluation is given */
     if (a->cell[0]->num) {
         x = nval_eval(e, nval_pop(a, 1));
-    } else {
+    } 
+
+    if (!a->cell[0]->num && a->count > 2) {
+        /* Both evaluations are given and is false */
         x = nval_eval(e, nval_pop(a, 2));
+    } else {
+        /* False evaluation was NOT given */
+        x = nval_qexpr();
     }
 
     nval_del(a);
