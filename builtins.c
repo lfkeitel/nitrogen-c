@@ -433,7 +433,8 @@ nval* builtin_if(nenv* e, nval* a) {
     if (!a->cell[0]->num && a->count > 2) {
         /* Both evaluations are given and is false */
         x = nval_eval(e, nval_pop(a, 2));
-    } else {
+    } 
+    if (!a->cell[0]->num && a->count < 2) {
         /* False evaluation was NOT given */
         x = nval_qexpr();
     }
