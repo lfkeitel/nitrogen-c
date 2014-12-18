@@ -364,6 +364,7 @@ int nval_eq(nval* x, nval* y) {
   if (x->type != y->type) { return 0; }
 
   switch (x->type) {
+    case NVAL_QUIT:
     case NVAL_NUM: return (x->num == y->num);
 
     case NVAL_ERR: return (strcmp(x->err, y->err) == 0);
@@ -461,7 +462,11 @@ nval* builtin_error(nenv* e, nval* a) {
 }
 
 nval* builtin_exit(nenv* e, nval* a) {
-    nval_println(a);
+    long errnum = 0;
+    if (a->count > 0) {
+        nval_println(a);
+        errnum = a->cell[0]->num;
+    }
     nval_del(a);
-    return nval_quit();
+    return nval_quit(errnum);
 }

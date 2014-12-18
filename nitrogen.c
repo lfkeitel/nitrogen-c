@@ -117,7 +117,7 @@ int main(int argc, char** argv) {
 
     if (argc == 1) {
         puts("Nitrogen Version 0.1.0");
-        puts("Press Ctrl+c to Exit\n");
+        puts("Press Ctrl+c or (exit) to Exit\n");
 
         while (1) {
             char* input = readline("nitrogen> ");

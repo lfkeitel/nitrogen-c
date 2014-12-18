@@ -215,9 +215,10 @@ nval* nval_ok(void) {
     return v;
 }
 
-nval* nval_quit(void) {
+nval* nval_quit(long x) {
     nval* v = malloc(sizeof(nval));
     v->type = NVAL_QUIT;
+    v->num = x;
     return v;
 }
 

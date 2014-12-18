@@ -86,7 +86,7 @@ nval* nval_fun(nbuiltin func);
 nval* nval_lambda(nval* formals, nval* body);
 nval* nval_str(char* s);
 nval* nval_ok(void);
-nval* nval_quit(void);
+nval* nval_quit(long x);
 
 /* nval manipulation functions */
 void nval_del(nval* v);
