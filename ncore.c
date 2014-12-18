@@ -190,6 +190,12 @@ nval* nval_fun(nbuiltin func) {
     return v;
 }
 
+nval* nval_macro(nbuiltin func) {
+    nval* v = nval_fun(func);
+    v->type = NVAL_FUN_MACRO;
+    return v;
+}
+
 nval* nval_lambda(nval* formals, nval* body) {
     nval* v = malloc(sizeof(nval));
     v->type = NVAL_FUN;
@@ -245,6 +251,7 @@ void nval_del(nval* v) {
 
         /* User defined functions */
         case NVAL_FUN:
+        case NVAL_FUN_MACRO:
             if (!v->builtin) {
                 nenv_del(v->env);
                 nval_del(v->formals);
@@ -287,6 +294,7 @@ nval* nval_join(nval* x, nval* y) {
 
 nval* nval_copy(nval* v) {
     nval* x = malloc(sizeof(nval));
+    nval_println(v);
     x->type = v->type;
 
     switch (v->type) {
@@ -306,6 +314,7 @@ nval* nval_copy(nval* v) {
         case NVAL_SEXPR:
         case NVAL_QEXPR:
             x->count = v->count;
+            printf("%d\n", v->count);
             x->cell = malloc(sizeof(nval*) * x->count);
             for (int i = 0; i < x->count; i++) {
                 x->cell[i] = nval_copy(v->cell[i]);
@@ -313,6 +322,7 @@ nval* nval_copy(nval* v) {
         break;
 
         case NVAL_FUN:
+        case NVAL_FUN_MACRO:
             if (v->builtin) {
                 x->builtin = v->builtin;
             } else {
@@ -329,6 +339,7 @@ nval* nval_copy(nval* v) {
 char* ntype_name(int t) {
     switch(t) {
         case NVAL_FUN: return "Function";
+        case NVAL_FUN_MACRO: return "Language Macro";
         case NVAL_NUM: return "Number";
         case NVAL_ERR: return "Error";
         case NVAL_SYM: return "Symbol";
@@ -358,6 +369,7 @@ void nval_print(nval* v) {
         case NVAL_QEXPR: nval_expr_print(v, '{', '}'); break;
         case NVAL_STR: nval_print_str(v); break;
         case NVAL_FUN:
+        case NVAL_FUN_MACRO:
             if (v->builtin) {
                 printf("<builtin>");
             } else {
@@ -406,8 +418,13 @@ nval* nval_eval(nenv* e, nval* v) {
 }
 
 nval* nval_eval_sexpr(nenv* e, nval* v) {
+    bool macro = false;
     for (int i = 0; i < v->count; i++) {
         v->cell[i] = nval_eval(e, v->cell[i]);
+        if (v->cell[i]->type == NVAL_FUN_MACRO) {
+            macro = true;
+            break;
+        }
     }
 
     for (int i = 0; i < v->count; i++) {
@@ -418,13 +435,13 @@ nval* nval_eval_sexpr(nenv* e, nval* v) {
 
     if (v->count == 0) { return v; }
     if (v->count == 1) {
-        if (v->cell[0]->type != NVAL_FUN) {
+        if (v->cell[0]->type != NVAL_FUN && v->cell[0]->type != NVAL_FUN_MACRO) {
             return nval_take(v, 0);
         }
     }
 
     nval* f = nval_pop(v, 0);
-    if (f->type != NVAL_FUN) {
+    if (f->type != NVAL_FUN && f->type != NVAL_FUN_MACRO && !macro) {
         nval* err = nval_err(
             "S-Expression starts with incorrect type. "
             "Got %s, Expected %s.",
