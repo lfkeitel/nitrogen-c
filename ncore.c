@@ -229,6 +229,12 @@ nval* nval_ok(void) {
     return v;
 }
 
+nval* nval_empty(void) {
+    nval* v = malloc(sizeof(nval));
+    v->type = NVAL_EMPTY;
+    return v;
+}
+
 nval* nval_quit(long x) {
     nval* v = malloc(sizeof(nval));
     v->type = NVAL_QUIT;
@@ -242,6 +248,7 @@ void nval_del(nval* v) {
         /* Number and function, nothing special */
         case NVAL_NUM: break;
         case NVAL_OK:  break;
+        case NVAL_EMPTY: break;
         case NVAL_FUN_MACRO: break; /* Macros are only builtin systems */
         /* err and sym are strings with malloc */
         case NVAL_ERR: free(v->err); break;
@@ -305,6 +312,7 @@ nval* nval_copy(nval* v) {
     x->type = v->type;
 
     switch (v->type) {
+        case NVAL_EMPTY: break;
         case NVAL_NUM: x->num = v->num; break;
         case NVAL_OK:  x->ok = v->ok; break;
         case NVAL_FUN_MACRO: x->builtin = v->builtin; break;
@@ -353,6 +361,7 @@ char* ntype_name(int t) {
         case NVAL_QEXPR: return "Q-Expression";
         case NVAL_STR: return "String";
         case NVAL_OK: return "Ok";
+        case NVAL_EMPTY: return "Empty";
         case NVAL_QUIT: return "Exit command";
         default: return "Unknown";
     }
@@ -361,6 +370,7 @@ char* ntype_name(int t) {
 /* Core print statements */
 void nval_print(nval* v) {
     switch (v->type) {
+        case NVAL_EMPTY: break;
         case NVAL_NUM:   printf("%li", v->num); break;
         case NVAL_ERR:   printf("Error: %s", v->err); break;
         case NVAL_SYM:   printf("%s", v->sym); break;
@@ -392,7 +402,9 @@ void nval_print(nval* v) {
 
 void nval_println(nval* v) {
     nval_print(v);
-    putchar('\n');
+    if (v->type != NVAL_EMPTY) {
+        putchar('\n');
+    }
 }
 
 void nval_expr_print(nval* v, char open, char close) {

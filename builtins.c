@@ -326,7 +326,7 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
     }
 
     nval_del(a);
-    return nval_ok();
+    return nval_empty();
 }
 
 nval* builtin_undef(nenv* e, nval* a) {
