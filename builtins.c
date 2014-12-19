@@ -267,12 +267,14 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
         /* If 'def' define in globally. If 'put' define in locally */
         if (strcmp(func, "def") == 0) {
             if (!nenv_def(e, syms->cell[i], a->cell[i+1])) {
+                nval_del(a);
                 return nval_err("Cannot redefine protected functions");
             }
         }
 
         if (strcmp(func, "pdef") == 0) {
             if (!nenv_def_protected(e, syms->cell[i], a->cell[i+1])) {
+                nval_del(a);
                 return nval_err("Cannot redefine protected functions");
             }
         }
