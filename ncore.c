@@ -242,6 +242,7 @@ void nval_del(nval* v) {
         /* Number and function, nothing special */
         case NVAL_NUM: break;
         case NVAL_OK:  break;
+        case NVAL_FUN_MACRO: break; /* Macros are only builtin systems */
         /* err and sym are strings with malloc */
         case NVAL_ERR: free(v->err); break;
         case NVAL_SYM: free(v->sym); break;
@@ -259,7 +260,6 @@ void nval_del(nval* v) {
 
         /* User defined functions */
         case NVAL_FUN:
-        case NVAL_FUN_MACRO:
             if (!v->builtin) {
                 nenv_del(v->env);
                 nval_del(v->formals);
@@ -307,6 +307,7 @@ nval* nval_copy(nval* v) {
     switch (v->type) {
         case NVAL_NUM: x->num = v->num; break;
         case NVAL_OK:  x->ok = v->ok; break;
+        case NVAL_FUN_MACRO: x->builtin = v->builtin; break;
 
         case NVAL_ERR:
             x->err = malloc(strlen(v->err)+1);
@@ -328,7 +329,6 @@ nval* nval_copy(nval* v) {
         break;
 
         case NVAL_FUN:
-        case NVAL_FUN_MACRO:
             if (v->builtin) {
                 x->builtin = v->builtin;
             } else {
@@ -374,14 +374,19 @@ void nval_print(nval* v) {
         case NVAL_SEXPR: nval_expr_print(v, '(', ')'); break;
         case NVAL_QEXPR: nval_expr_print(v, '{', '}'); break;
         case NVAL_STR: nval_print_str(v); break;
-        case NVAL_FUN:
         case NVAL_FUN_MACRO:
+            if (v->builtin) {
+                printf("<macro>");
+            }
+            break;
+        case NVAL_FUN:
             if (v->builtin) {
                 printf("<builtin>");
             } else {
                 printf("(\\ "); nval_print(v->formals);
                 putchar(' '); nval_print(v->body); putchar(')');
             }
+            break;
     }
 }
 
@@ -443,13 +448,13 @@ nval* nval_eval_sexpr(nenv* e, nval* v) {
 
     if (v->count == 0) { return v; }
     if (v->count == 1) {
-        if (v->cell[0]->type != NVAL_FUN && v->cell[0]->type != NVAL_FUN_MACRO) {
+        if (v->cell[0]->type != NVAL_FUN) {
             return nval_take(v, 0);
         }
     }
 
     nval* f = nval_pop(v, 0);
-    if (f->type != NVAL_FUN && f->type != NVAL_FUN_MACRO) {
+    if (f->type != NVAL_FUN) {
         nval* err = nval_err(
             "S-Expression starts with incorrect type. "
             "Got %s, Expected %s.",

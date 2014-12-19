@@ -256,6 +256,7 @@ nval* builtin_put(nenv* e, nval* a) {
 }
 
 nval* builtin_var(nenv* e, nval* a, char* func) {
+    LASSERT_NUM(func, a, 2);
     if (a->cell[0]->type != NVAL_SYM && a->cell[0]->type != NVAL_SEXPR) {
         LASSERT_TYPE(func, a, 0, NVAL_QEXPR);
 
