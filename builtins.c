@@ -274,6 +274,7 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
             "Got %i, Expected %i.", func, syms->count, a->count-1);
 
         for (int i = 0; i < syms->count; i++) {
+            a->cell[i+1] = nval_eval(e, a->cell[i+1]);
             /* If 'def' define in globally. If 'put' define in locally */
             if (strcmp(func, "def") == 0) {
                 if (!nenv_def(e, syms->cell[i], a->cell[i+1])) {
