@@ -73,12 +73,12 @@ nval* builtin_load(nenv* e, nval* a) {
 
     /* Evaluate each Expression */
     while (expr->count) {
-      nval* x = nval_eval(e, nval_pop(expr, 0));
-      /* If Evaluation leads to error print it */
-      if (x->type == NVAL_ERR) { nval_println(x); }
-      /* Special case for NVAL_QUIT type */
-      if (x->type == NVAL_QUIT) { nval_del(x); break; }
-      nval_del(x);
+        nval* x = nval_eval(e, nval_pop(expr, 0));
+        /* If Evaluation leads to error print it */
+        if (x->type == NVAL_ERR) { nval_println(x); }
+        /* Special case for NVAL_QUIT type */
+        if (x->type == NVAL_QUIT) { nval_del(x); break; }
+        nval_del(x);
     }
     
     /* Delete expressions and arguments */
@@ -277,12 +277,14 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
             /* If 'def' define in globally. If 'put' define in locally */
             if (strcmp(func, "def") == 0) {
                 if (!nenv_def(e, syms->cell[i], a->cell[i+1])) {
+                    nval_del(a);
                     return nval_err("Cannot redefine protected functions");
                 }
             }
 
             if (strcmp(func, "pdef") == 0) {
                 if (!nenv_def_protected(e, syms->cell[i], a->cell[i+1])) {
+                    nval_del(a);
                     return nval_err("Cannot redefine protected functions");
                 }
             }
@@ -294,7 +296,9 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
     } else {
         LASSERT_NUM(func, a, 2);
         if (a->cell[0]->type == NVAL_SEXPR) {
-            a->cell[0] = nval_pop(nval_eval(e, a->cell[0]), 0);
+            nval* pre_result = nval_eval(e, a->cell[0]);
+            a->cell[0] = nval_pop(pre_result, 0);
+            nval_del(pre_result);
         }
 
         if (a->cell[1]->type == NVAL_SEXPR) {
@@ -303,12 +307,14 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
 
         if (strcmp(func, "def") == 0) {
             if (!nenv_def(e, a->cell[0], a->cell[1])) {
+                nval_del(a);
                 return nval_err("Cannot redefine protected functions");
             }
         }
 
         if (strcmp(func, "pdef") == 0) {
             if (!nenv_def_protected(e, a->cell[0], a->cell[1])) {
+                nval_del(a);
                 return nval_err("Cannot redefine protected functions");
             }
         }

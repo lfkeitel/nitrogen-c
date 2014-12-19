@@ -431,30 +431,33 @@ nval* nval_eval(nenv* e, nval* v) {
 nval* nval_eval_sexpr(nenv* e, nval* v) {
     if (v->count > 0) {
         v->cell[0] = nval_eval(e, v->cell[0]);
-        if (v->cell[0]->type == NVAL_FUN_MACRO) {
-            return nval_call(e, nval_pop(v, 0), v);
-        }
-    }
+        if (v->cell[0]->type != NVAL_FUN_MACRO) {
+            /*nval* fmac = nval_pop(v, 0);
+            nval* macresult = nval_call(e, fmac, v);
+            nval_del(fmac);
+            return macresult;*/
 
-    for (int i = 1; i < v->count; i++) {
-        v->cell[i] = nval_eval(e, v->cell[i]);
-    }
+            for (int i = 1; i < v->count; i++) {
+                v->cell[i] = nval_eval(e, v->cell[i]);
+            }
 
-    for (int i = 0; i < v->count; i++) {
-        if (v->cell[i]->type == NVAL_ERR) {
-            return nval_take(v, i);
-        }
-    }
+            for (int i = 0; i < v->count; i++) {
+                if (v->cell[i]->type == NVAL_ERR) {
+                    return nval_take(v, i);
+                }
+            }
 
-    if (v->count == 0) { return v; }
-    if (v->count == 1) {
-        if (v->cell[0]->type != NVAL_FUN) {
-            return nval_take(v, 0);
+            if (v->count == 0) { return v; }
+            if (v->count == 1) {
+                if (v->cell[0]->type != NVAL_FUN) {
+                    return nval_take(v, 0);
+                }
+            }
         }
     }
 
     nval* f = nval_pop(v, 0);
-    if (f->type != NVAL_FUN) {
+    if (f->type != NVAL_FUN && f->type != NVAL_FUN_MACRO) {
         nval* err = nval_err(
             "S-Expression starts with incorrect type. "
             "Got %s, Expected %s.",
@@ -483,7 +486,7 @@ nval* nval_call(nenv* e, nval* f, nval* a) {
         }
 
         nval* sym = nval_pop(f->formals, 0);
-        /* Special case to deal with & */
+        /*Special case to deal with & */
         if (strcmp(sym->sym, "&") == 0) {
             if (f->formals->count != 1) {
                 nval_del(a);
