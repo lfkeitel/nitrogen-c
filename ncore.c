@@ -7,6 +7,7 @@
 #include "ncore.h"
 #include "builtins.h"
 #include "mpc.h"
+#include "mempool.h"
 
 /* Constuctor and destructor for environment types */
 nenv* nenv_new(void) {
@@ -138,7 +139,8 @@ bool nenv_def_protected(nenv* e, nval* k, nval* v) {
 
 /* Constructor functions for nval types */
 nval* nval_num(long x) {
-    nval* v = malloc(sizeof(nval));
+    //nval* v = malloc(sizeof(nval));
+    nval* v = nmalloc();
     v->type = NVAL_NUM;
     v->num = x;
     return v;
@@ -246,7 +248,7 @@ nval* nval_quit(long x) {
 void nval_del(nval* v) {
     switch (v->type) {
         /* Number and function, nothing special */
-        case NVAL_NUM: break;
+        case NVAL_NUM: nfree(v); return;
         case NVAL_OK:  break;
         case NVAL_EMPTY: break;
         case NVAL_FUN_MACRO: break; /* Macros are only builtin systems */

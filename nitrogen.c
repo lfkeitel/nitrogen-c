@@ -6,6 +6,7 @@
 
 #include "ncore.h"
 #include "builtins.h"
+#include "mempool.h"
 
 /* Windows doesn't use the editline library */
 #ifdef _WIN32
@@ -110,10 +111,10 @@ int main(int argc, char** argv) {
     nenv* e = nenv_new();
     nenv_add_builtins(e);
     
-    nval* args = nval_add(nval_sexpr(), nval_str("ncore.n"));
+    /*nval* args = nval_add(nval_sexpr(), nval_str("ncore.n"));
     nval* x = builtin_load(e, args);
     if (x->type == NVAL_ERR) { nval_println(x); }
-    nval_del(x);
+    nval_del(x);*/
 
     if (argc == 1) {
         puts("Nitrogen Version 0.1.0");
@@ -157,5 +158,6 @@ int main(int argc, char** argv) {
 
     nenv_del(e);
     mpc_cleanup(8, Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Nitrogen);
+    deallocate_pool();
     return 0;
 }
