@@ -13,6 +13,14 @@ void nenv_add_builtin(nenv* e, char* name, nbuiltin func) {
     nval_del(v);
 }
 
+void nenv_add_builtin_macro(nenv* e, char* name, nbuiltin func) {
+    nval* k = nval_sym(name);
+    nval* v = nval_macro(func);
+    nenv_put_protected(e, k, v);
+    nval_del(k);
+    nval_del(v);
+}
+
 void nenv_add_builtins(nenv* e) {
     nenv_add_builtin(e, "load", builtin_load);
     nenv_add_builtin(e, "print", builtin_print);
@@ -20,11 +28,11 @@ void nenv_add_builtins(nenv* e) {
     nenv_add_builtin(e, "exit", builtin_exit);
 
     /* Variables and functions */
-    nenv_add_builtin(e, "def", builtin_def);
-    nenv_add_builtin(e, "pdef", builtin_pdef);
+    nenv_add_builtin_macro(e, "def", builtin_def);
+    nenv_add_builtin_macro(e, "pdef", builtin_pdef);
+    nenv_add_builtin_macro(e, "=", builtin_put);
     nenv_add_builtin(e, "undef", builtin_undef);
     nenv_add_builtin(e, "\\", builtin_lambda);
-    nenv_add_builtin(e, "=", builtin_put);
 
     /* List Functions */
     nenv_add_builtin(e, "list", builtin_list);
@@ -65,12 +73,12 @@ nval* builtin_load(nenv* e, nval* a) {
 
     /* Evaluate each Expression */
     while (expr->count) {
-      nval* x = nval_eval(e, nval_pop(expr, 0));
-      /* If Evaluation leads to error print it */
-      if (x->type == NVAL_ERR) { nval_println(x); }
-      /* Special case for NVAL_QUIT type */
-      if (x->type == NVAL_QUIT) { nval_del(x); break; }
-      nval_del(x);
+        nval* x = nval_eval(e, nval_pop(expr, 0));
+        /* If Evaluation leads to error print it */
+        if (x->type == NVAL_ERR) { nval_println(x); }
+        /* Special case for NVAL_QUIT type */
+        if (x->type == NVAL_QUIT) { nval_del(x); break; }
+        nval_del(x);
     }
     
     /* Delete expressions and arguments */
@@ -248,44 +256,77 @@ nval* builtin_put(nenv* e, nval* a) {
 }
 
 nval* builtin_var(nenv* e, nval* a, char* func) {
-    LASSERT_TYPE(func, a, 0, NVAL_QEXPR);
+    LASSERT_NUM(func, a, 2);
+    if (a->cell[0]->type != NVAL_SYM && a->cell[0]->type != NVAL_SEXPR) {
+        LASSERT_TYPE(func, a, 0, NVAL_QEXPR);
 
-    nval* syms = a->cell[0];
-    for (int i = 0; i < syms->count; i++) {
-        LASSERT(a, (syms->cell[i]->type == NVAL_SYM),
-          "Function '%s' cannot define non-symbol. "
-          "Got %s, Expected %s.", func, 
-          ntype_name(syms->cell[i]->type),
-          ntype_name(NVAL_SYM));
-    }
+        nval* syms = a->cell[0];
+        for (int i = 0; i < syms->count; i++) {
+            LASSERT(a, (syms->cell[i]->type == NVAL_SYM),
+              "Function '%s' cannot define non-symbol. "
+              "Got %s, Expected %s.", func, 
+              ntype_name(syms->cell[i]->type),
+              ntype_name(NVAL_SYM));
+        }
 
-    LASSERT(a, (syms->count == a->count-1),
-        "Function '%s' passed too many arguments for symbols. "
-        "Got %i, Expected %i.", func, syms->count, a->count-1);
+        LASSERT(a, (syms->count == a->count-1),
+            "Function '%s' passed too many arguments for symbols. "
+            "Got %i, Expected %i.", func, syms->count, a->count-1);
 
-    for (int i = 0; i < syms->count; i++) {
-        /* If 'def' define in globally. If 'put' define in locally */
+        for (int i = 0; i < syms->count; i++) {
+            a->cell[i+1] = nval_eval(e, a->cell[i+1]);
+            /* If 'def' define in globally. If 'put' define in locally */
+            if (strcmp(func, "def") == 0) {
+                if (!nenv_def(e, syms->cell[i], a->cell[i+1])) {
+                    nval_del(a);
+                    return nval_err("Cannot redefine protected functions");
+                }
+            }
+
+            if (strcmp(func, "pdef") == 0) {
+                if (!nenv_def_protected(e, syms->cell[i], a->cell[i+1])) {
+                    nval_del(a);
+                    return nval_err("Cannot redefine protected functions");
+                }
+            }
+
+            if (strcmp(func, "=")   == 0) {
+                nenv_put(e, syms->cell[i], a->cell[i+1]);
+            } 
+        }
+    } else {
+        LASSERT_NUM(func, a, 2);
+        if (a->cell[0]->type == NVAL_SEXPR) {
+            nval* pre_result = nval_eval(e, a->cell[0]);
+            a->cell[0] = nval_pop(pre_result, 0);
+            nval_del(pre_result);
+        }
+
+        if (a->cell[1]->type == NVAL_SEXPR) {
+            a->cell[1] = nval_eval(e, a->cell[1]);
+        }
+
         if (strcmp(func, "def") == 0) {
-            if (!nenv_def(e, syms->cell[i], a->cell[i+1])) {
+            if (!nenv_def(e, a->cell[0], a->cell[1])) {
                 nval_del(a);
                 return nval_err("Cannot redefine protected functions");
             }
         }
 
         if (strcmp(func, "pdef") == 0) {
-            if (!nenv_def_protected(e, syms->cell[i], a->cell[i+1])) {
+            if (!nenv_def_protected(e, a->cell[0], a->cell[1])) {
                 nval_del(a);
                 return nval_err("Cannot redefine protected functions");
             }
         }
 
-        if (strcmp(func, "=")   == 0) {
-            nenv_put(e, syms->cell[i], a->cell[i+1]);
-        } 
+        if (strcmp(func, "=") == 0) {
+            nenv_put(e, a->cell[0], a->cell[1]);
+        }
     }
 
     nval_del(a);
-    return nval_ok();
+    return nval_empty();
 }
 
 nval* builtin_undef(nenv* e, nval* a) {

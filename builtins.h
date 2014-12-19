@@ -5,6 +5,7 @@
 
 /* Builtin functions and operations */
 void nenv_add_builtin(nenv* e, char* name, nbuiltin func);
+void nenv_add_builtin_macro(nenv* e, char* name, nbuiltin func);
 void nenv_add_builtins(nenv* e);
 
 mpc_parser_t* Nitrogen;

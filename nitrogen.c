@@ -146,9 +146,7 @@ int main(int argc, char** argv) {
 
             free(input);
         }
-    }
-
-    if (argc >= 2) {
+    } else if (argc >= 2) {
         for (int i = 1; i < argc; i++) {
             nval* args = nval_add(nval_sexpr(), nval_str(argv[i]));
             nval* x = builtin_load(e, args);

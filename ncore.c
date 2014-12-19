@@ -198,6 +198,12 @@ nval* nval_fun(nbuiltin func) {
     return v;
 }
 
+nval* nval_macro(nbuiltin func) {
+    nval* v = nval_fun(func);
+    v->type = NVAL_FUN_MACRO;
+    return v;
+}
+
 nval* nval_lambda(nval* formals, nval* body) {
     nval* v = malloc(sizeof(nval));
     v->type = NVAL_FUN;
@@ -223,6 +229,12 @@ nval* nval_ok(void) {
     return v;
 }
 
+nval* nval_empty(void) {
+    nval* v = malloc(sizeof(nval));
+    v->type = NVAL_EMPTY;
+    return v;
+}
+
 nval* nval_quit(long x) {
     nval* v = malloc(sizeof(nval));
     v->type = NVAL_QUIT;
@@ -236,6 +248,8 @@ void nval_del(nval* v) {
         /* Number and function, nothing special */
         case NVAL_NUM: break;
         case NVAL_OK:  break;
+        case NVAL_EMPTY: break;
+        case NVAL_FUN_MACRO: break; /* Macros are only builtin systems */
         /* err and sym are strings with malloc */
         case NVAL_ERR: free(v->err); break;
         case NVAL_SYM: free(v->sym); break;
@@ -298,8 +312,10 @@ nval* nval_copy(nval* v) {
     x->type = v->type;
 
     switch (v->type) {
+        case NVAL_EMPTY: break;
         case NVAL_NUM: x->num = v->num; break;
         case NVAL_OK:  x->ok = v->ok; break;
+        case NVAL_FUN_MACRO: x->builtin = v->builtin; break;
 
         case NVAL_ERR:
             x->err = malloc(strlen(v->err)+1);
@@ -337,6 +353,7 @@ nval* nval_copy(nval* v) {
 char* ntype_name(int t) {
     switch(t) {
         case NVAL_FUN: return "Function";
+        case NVAL_FUN_MACRO: return "Language Macro";
         case NVAL_NUM: return "Number";
         case NVAL_ERR: return "Error";
         case NVAL_SYM: return "Symbol";
@@ -344,6 +361,7 @@ char* ntype_name(int t) {
         case NVAL_QEXPR: return "Q-Expression";
         case NVAL_STR: return "String";
         case NVAL_OK: return "Ok";
+        case NVAL_EMPTY: return "Empty";
         case NVAL_QUIT: return "Exit command";
         default: return "Unknown";
     }
@@ -352,6 +370,7 @@ char* ntype_name(int t) {
 /* Core print statements */
 void nval_print(nval* v) {
     switch (v->type) {
+        case NVAL_EMPTY: break;
         case NVAL_NUM:   printf("%li", v->num); break;
         case NVAL_ERR:   printf("Error: %s", v->err); break;
         case NVAL_SYM:   printf("%s", v->sym); break;
@@ -365,6 +384,11 @@ void nval_print(nval* v) {
         case NVAL_SEXPR: nval_expr_print(v, '(', ')'); break;
         case NVAL_QEXPR: nval_expr_print(v, '{', '}'); break;
         case NVAL_STR: nval_print_str(v); break;
+        case NVAL_FUN_MACRO:
+            if (v->builtin) {
+                printf("<macro>");
+            }
+            break;
         case NVAL_FUN:
             if (v->builtin) {
                 printf("<builtin>");
@@ -372,12 +396,15 @@ void nval_print(nval* v) {
                 printf("(\\ "); nval_print(v->formals);
                 putchar(' '); nval_print(v->body); putchar(')');
             }
+            break;
     }
 }
 
 void nval_println(nval* v) {
     nval_print(v);
-    putchar('\n');
+    if (v->type != NVAL_EMPTY) {
+        putchar('\n');
+    }
 }
 
 void nval_expr_print(nval* v, char open, char close) {
@@ -414,25 +441,35 @@ nval* nval_eval(nenv* e, nval* v) {
 }
 
 nval* nval_eval_sexpr(nenv* e, nval* v) {
-    for (int i = 0; i < v->count; i++) {
-        v->cell[i] = nval_eval(e, v->cell[i]);
-    }
+    if (v->count > 0) {
+        v->cell[0] = nval_eval(e, v->cell[0]);
+        if (v->cell[0]->type != NVAL_FUN_MACRO) {
+            /*nval* fmac = nval_pop(v, 0);
+            nval* macresult = nval_call(e, fmac, v);
+            nval_del(fmac);
+            return macresult;*/
 
-    for (int i = 0; i < v->count; i++) {
-        if (v->cell[i]->type == NVAL_ERR) {
-            return nval_take(v, i);
-        }
-    }
+            for (int i = 1; i < v->count; i++) {
+                v->cell[i] = nval_eval(e, v->cell[i]);
+            }
 
-    if (v->count == 0) { return v; }
-    if (v->count == 1) {
-        if (v->cell[0]->type != NVAL_FUN) {
-            return nval_take(v, 0);
+            for (int i = 0; i < v->count; i++) {
+                if (v->cell[i]->type == NVAL_ERR) {
+                    return nval_take(v, i);
+                }
+            }
+
+            if (v->count == 0) { return v; }
+            if (v->count == 1) {
+                if (v->cell[0]->type != NVAL_FUN) {
+                    return nval_take(v, 0);
+                }
+            }
         }
     }
 
     nval* f = nval_pop(v, 0);
-    if (f->type != NVAL_FUN) {
+    if (f->type != NVAL_FUN && f->type != NVAL_FUN_MACRO) {
         nval* err = nval_err(
             "S-Expression starts with incorrect type. "
             "Got %s, Expected %s.",
@@ -461,7 +498,7 @@ nval* nval_call(nenv* e, nval* f, nval* a) {
         }
 
         nval* sym = nval_pop(f->formals, 0);
-        /* Special case to deal with & */
+        /*Special case to deal with & */
         if (strcmp(sym->sym, "&") == 0) {
             if (f->formals->count != 1) {
                 nval_del(a);
