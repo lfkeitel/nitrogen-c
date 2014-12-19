@@ -330,6 +330,7 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
 }
 
 nval* builtin_undef(nenv* e, nval* a) {
+    LASSERT_NUM("undef", a, 1);
     LASSERT(a, a->cell[0]->type == NVAL_QEXPR,
         "Function 'undef' passed incorrect type");
 
@@ -345,7 +346,7 @@ nval* builtin_undef(nenv* e, nval* a) {
         nenv_rem(e, syms->cell[i]);
     }
     nval_del(a);
-    return nval_ok();
+    return nval_empty();
 }
 
 nval* builtin_lambda(nenv* e, nval* a) {
