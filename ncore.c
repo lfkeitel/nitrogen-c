@@ -26,6 +26,7 @@ void nenv_del(nenv* e) {
     }
     free(e->syms);
     free(e->vals);
+    free(e->protected);
     free(e);
 }
 
@@ -107,12 +108,19 @@ nenv* nenv_copy(nenv* e) {
     nenv* n = malloc(sizeof(nenv));
     n->par = e->par;
     n->count = e->count;
-    n->syms = malloc(sizeof(char*) * n->count);
-    n->vals = malloc(sizeof(nval*) * n->count);
-    for (int i = 0; i < e->count; i++) {
-        n->syms[i] = malloc(strlen(e->syms[i]) + 1);
-        strcpy(n->syms[i], e->syms[i]);
-        n->vals[i] = nval_copy(e->vals[i]);
+    if (e->count > 0) {
+        n->syms = malloc(sizeof(char*) * n->count);
+        n->vals = malloc(sizeof(nval*) * n->count);
+        for (int i = 0; i < e->count; i++) {
+            n->syms[i] = malloc(strlen(e->syms[i]) + 1);
+            strcpy(n->syms[i], e->syms[i]);
+            n->vals[i] = nval_copy(e->vals[i]);
+            n->protected[i] = e->protected[i];
+        }
+    } else {
+        n->syms = NULL;
+        n->vals = NULL;
+        n->protected = NULL;
     }
     return n;
 }
