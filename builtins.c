@@ -30,9 +30,9 @@ void nenv_add_builtins(nenv* e) {
     /* Variables and functions */
     nenv_add_builtin_macro(e, "def", builtin_def);
     nenv_add_builtin_macro(e, "pdef", builtin_pdef);
+    nenv_add_builtin_macro(e, "=", builtin_put);
     nenv_add_builtin(e, "undef", builtin_undef);
     nenv_add_builtin(e, "\\", builtin_lambda);
-    nenv_add_builtin_macro(e, "=", builtin_put);
 
     /* List Functions */
     nenv_add_builtin(e, "list", builtin_list);
@@ -292,42 +292,29 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
         }
     } else {
         LASSERT_NUM(func, a, 2);
-        nval* t = malloc(sizeof(nval));
         if (a->cell[0]->type == NVAL_SEXPR) {
-            t = nval_eval(e, a->cell[0]);
-            t = nval_pop(t, 0);
-        } else {
-            t = nval_copy(a->cell[0]);
+            a->cell[0] = nval_pop(nval_eval(e, a->cell[0]), 0);
         }
 
-        nval* b = malloc(sizeof(nval));
         if (a->cell[1]->type == NVAL_SEXPR) {
-            b = nval_eval(e, a->cell[1]);
-        } else {
-            b = nval_copy(a->cell[1]);
+            a->cell[1] = nval_eval(e, a->cell[1]);
         }
 
         if (strcmp(func, "def") == 0) {
-            if (!nenv_def(e, t, b)) {
-                nval_del(t);
-                nval_del(b);
+            if (!nenv_def(e, a->cell[0], a->cell[1])) {
                 return nval_err("Cannot redefine protected functions");
             }
         }
 
         if (strcmp(func, "pdef") == 0) {
-            if (!nenv_def_protected(e, t, b)) {
-                nval_del(t);
-                nval_del(b);
+            if (!nenv_def_protected(e, a->cell[0], a->cell[1])) {
                 return nval_err("Cannot redefine protected functions");
             }
         }
 
         if (strcmp(func, "=") == 0) {
-            nenv_put(e, t, b);
+            nenv_put(e, a->cell[0], a->cell[1]);
         }
-        nval_del(t);
-        nval_del(b);
     }
 
     nval_del(a);

@@ -10,7 +10,7 @@
 ;;; Functional Functions
 
 ; Protected Function Definitions
-(pdef {pfun} (\ {f b} {
+(pdef pfun (\ {f b} {
     pdef (head f) (\ (tail f) b)
 }))
 

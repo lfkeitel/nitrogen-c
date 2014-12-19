@@ -26,6 +26,7 @@ void nenv_del(nenv* e) {
     }
     free(e->syms);
     free(e->vals);
+    free(e->protected);
     free(e);
 }
 
@@ -113,6 +114,7 @@ nenv* nenv_copy(nenv* e) {
         n->syms[i] = malloc(strlen(e->syms[i]) + 1);
         strcpy(n->syms[i], e->syms[i]);
         n->vals[i] = nval_copy(e->vals[i]);
+        n->protected[i] = e->protected[i];
     }
     return n;
 }
@@ -294,7 +296,6 @@ nval* nval_join(nval* x, nval* y) {
 
 nval* nval_copy(nval* v) {
     nval* x = malloc(sizeof(nval));
-    nval_println(v);
     x->type = v->type;
 
     switch (v->type) {
@@ -314,7 +315,6 @@ nval* nval_copy(nval* v) {
         case NVAL_SEXPR:
         case NVAL_QEXPR:
             x->count = v->count;
-            printf("%d\n", v->count);
             x->cell = malloc(sizeof(nval*) * x->count);
             for (int i = 0; i < x->count; i++) {
                 x->cell[i] = nval_copy(v->cell[i]);
@@ -418,13 +418,15 @@ nval* nval_eval(nenv* e, nval* v) {
 }
 
 nval* nval_eval_sexpr(nenv* e, nval* v) {
-    bool macro = false;
-    for (int i = 0; i < v->count; i++) {
-        v->cell[i] = nval_eval(e, v->cell[i]);
-        if (v->cell[i]->type == NVAL_FUN_MACRO) {
-            macro = true;
-            break;
+    if (v->count > 0) {
+        v->cell[0] = nval_eval(e, v->cell[0]);
+        if (v->cell[0]->type == NVAL_FUN_MACRO) {
+            return nval_call(e, nval_pop(v, 0), v);
         }
+    }
+
+    for (int i = 1; i < v->count; i++) {
+        v->cell[i] = nval_eval(e, v->cell[i]);
     }
 
     for (int i = 0; i < v->count; i++) {
@@ -441,7 +443,7 @@ nval* nval_eval_sexpr(nenv* e, nval* v) {
     }
 
     nval* f = nval_pop(v, 0);
-    if (f->type != NVAL_FUN && f->type != NVAL_FUN_MACRO && !macro) {
+    if (f->type != NVAL_FUN && f->type != NVAL_FUN_MACRO) {
         nval* err = nval_err(
             "S-Expression starts with incorrect type. "
             "Got %s, Expected %s.",
