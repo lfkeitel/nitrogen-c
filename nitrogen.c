@@ -6,6 +6,7 @@
 
 #include "ncore.h"
 #include "builtins.h"
+#include "mempool.h"
 
 /* Windows doesn't use the editline library */
 #ifdef _WIN32
@@ -157,5 +158,6 @@ int main(int argc, char** argv) {
 
     nenv_del(e);
     mpc_cleanup(8, Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Nitrogen);
+    deallocate_pools();
     return 0;
 }

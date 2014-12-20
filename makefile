@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-std=c99 -c -Wall
 LDFLAGS=-ledit -lm -g
-SOURCES=nitrogen.c builtins.c mpc.c ncore.c
+SOURCES=nitrogen.c builtins.c mpc.c mempool.c ncore.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=nitrogen
 

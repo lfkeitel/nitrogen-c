@@ -1,9 +1,11 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "mpc.h"
 #include "builtins.h"
 #include "ncore.h"
+#include "mempool.h"
 
 void nenv_add_builtin(nenv* e, char* name, nbuiltin func) {
     nval* k = nval_sym(name);
@@ -42,6 +44,7 @@ void nenv_add_builtins(nenv* e) {
     nenv_add_builtin(e, "join", builtin_join);
 
     nenv_add_builtin(e, "strcat", builtin_strconcat);
+    nenv_add_builtin(e, "mem-pool-stats", builtin_pool_stats);
 
     /* Mathematical Functions */
     nenv_add_builtin(e, "+", builtin_add);
@@ -57,6 +60,12 @@ void nenv_add_builtins(nenv* e) {
     nenv_add_builtin(e, "<",  builtin_lt);
     nenv_add_builtin(e, ">=", builtin_ge);
     nenv_add_builtin(e, "<=", builtin_le);
+}
+
+nval* builtin_pool_stats(nenv* e, nval* a) {
+    pool_stats();
+    nval_del(a);
+    return nval_empty();
 }
 
 nval* builtin_load(nenv* e, nval* a) {
