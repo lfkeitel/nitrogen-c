@@ -108,6 +108,7 @@ int main(int argc, char** argv) {
         ",
         Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Nitrogen);
 
+    allocate_pool();
     nenv* e = nenv_new();
     nenv_add_builtins(e);
     

@@ -139,7 +139,7 @@ bool nenv_def_protected(nenv* e, nval* k, nval* v) {
 
 /* Constructor functions for nval types */
 nval* nval_num(long x) {
-    //nval* v = malloc(sizeof(nval));
+    //nval* v = nmalloc();
     nval* v = nmalloc();
     v->type = NVAL_NUM;
     v->num = x;
@@ -147,7 +147,7 @@ nval* nval_num(long x) {
 }
 
 nval* nval_err(char* fmt, ...) {
-    nval* v = malloc(sizeof(nval));
+    nval* v = nmalloc();
     v->type = NVAL_ERR;
 
     /* Create a va list and initialize it */
@@ -170,7 +170,7 @@ nval* nval_err(char* fmt, ...) {
 }
 
 nval* nval_sym(char* s) {
-    nval* v = malloc(sizeof(nval));
+    nval* v = nmalloc();
     v->type = NVAL_SYM;
     v->sym = malloc(strlen(s) + 1);
     strcpy(v->sym, s);
@@ -178,7 +178,7 @@ nval* nval_sym(char* s) {
 }
 
 nval* nval_sexpr(void) {
-    nval* v = malloc(sizeof(nval));
+    nval* v = nmalloc();
     v->type = NVAL_SEXPR;
     v->count = 0;
     v->cell = NULL;
@@ -186,7 +186,7 @@ nval* nval_sexpr(void) {
 }
 
 nval* nval_qexpr(void) {
-    nval* v = malloc(sizeof(nval));
+    nval* v = nmalloc();
     v->type = NVAL_QEXPR;
     v->count = 0;
     v->cell = NULL;
@@ -194,7 +194,7 @@ nval* nval_qexpr(void) {
 }
 
 nval* nval_fun(nbuiltin func) {
-    nval* v = malloc(sizeof(nval));
+    nval* v = nmalloc();
     v->type = NVAL_FUN;
     v->builtin = func;
     return v;
@@ -207,7 +207,7 @@ nval* nval_macro(nbuiltin func) {
 }
 
 nval* nval_lambda(nval* formals, nval* body) {
-    nval* v = malloc(sizeof(nval));
+    nval* v = nmalloc();
     v->type = NVAL_FUN;
     v->builtin = NULL;
     v->env = nenv_new();
@@ -217,7 +217,7 @@ nval* nval_lambda(nval* formals, nval* body) {
 }
 
 nval* nval_str(char* s) {
-    nval* v = malloc(sizeof(nval));
+    nval* v = nmalloc();
     v->type = NVAL_STR;
     v->str = malloc(strlen(s)+1);
     strcpy(v->str, s);
@@ -225,20 +225,20 @@ nval* nval_str(char* s) {
 }
 
 nval* nval_ok(void) {
-    nval* v = malloc(sizeof(nval));
+    nval* v = nmalloc();
     v->type = NVAL_OK;
     v->ok = true;
     return v;
 }
 
 nval* nval_empty(void) {
-    nval* v = malloc(sizeof(nval));
+    nval* v = nmalloc();
     v->type = NVAL_EMPTY;
     return v;
 }
 
 nval* nval_quit(long x) {
-    nval* v = malloc(sizeof(nval));
+    nval* v = nmalloc();
     v->type = NVAL_QUIT;
     v->num = x;
     return v;
@@ -248,7 +248,7 @@ nval* nval_quit(long x) {
 void nval_del(nval* v) {
     switch (v->type) {
         /* Number and function, nothing special */
-        case NVAL_NUM: nfree(v); return;
+        case NVAL_NUM: break;
         case NVAL_OK:  break;
         case NVAL_EMPTY: break;
         case NVAL_FUN_MACRO: break; /* Macros are only builtin systems */
@@ -277,7 +277,7 @@ void nval_del(nval* v) {
         break;
     }
     /* Free mem allocated for v itself */
-    free(v);
+    nfree(v);
 }
 
 nval* nval_add(nval* v, nval* x) {
@@ -310,7 +310,7 @@ nval* nval_join(nval* x, nval* y) {
 }
 
 nval* nval_copy(nval* v) {
-    nval* x = malloc(sizeof(nval));
+    nval* x = nmalloc();
     x->type = v->type;
 
     switch (v->type) {
