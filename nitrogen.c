@@ -30,19 +30,24 @@ void add_history(char* unused) {}
 #include <editline/history.h>
 #endif
 
-mpc_parser_t* Number; 
-mpc_parser_t* Symbol; 
-mpc_parser_t* String; 
+mpc_parser_t* Number;
+mpc_parser_t* Symbol;
+mpc_parser_t* String;
 mpc_parser_t* Comment;
-mpc_parser_t* Sexpr;  
-mpc_parser_t* Qexpr;  
-mpc_parser_t* Expr; 
+mpc_parser_t* Sexpr;
+mpc_parser_t* Qexpr;
+mpc_parser_t* Expr;
 mpc_parser_t* Nitrogen;
 
 nval* nval_read_num(mpc_ast_t* t) {
     errno = 0;
-    long x = strtol(t->contents, NULL, 10);
-    return errno != ERANGE ? nval_num(x) : nval_err("invalid number");
+    if (strstr(t->contents, ".")) {
+        double x = strtod(t->contents, NULL);
+        return errno != ERANGE ? nval_double(x) : nval_err("invalid number");
+    } else {
+        long x = strtol(t->contents, NULL, 10);
+        return errno != ERANGE ? nval_num(x) : nval_err("invalid number");
+    }
 }
 
 nval* nval_read_str(mpc_ast_t* t) {
@@ -96,8 +101,8 @@ int main(int argc, char** argv) {
     /* Define parsers */
     mpca_lang(MPCA_LANG_DEFAULT,
         "                                                                       \
-          number    : /-?[0-9]+/ ;                                              \
-          symbol    : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/ ;                        \
+          number    : /-?[.|0-9]+/ ;                                            \
+          symbol    : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&%]+/ ;                       \
           string    : /\"(\\\\.|[^\"])*\"/ ;                                    \
           comment   : /;[^\\r\\n]*/ ;                                           \
           sexpr     : '(' <expr>* ')' ;                                         \

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include "mpc.h"
 #include "builtins.h"
@@ -51,6 +52,7 @@ void nenv_add_builtins(nenv* e) {
     nenv_add_builtin(e, "-", builtin_sub);
     nenv_add_builtin(e, "*", builtin_mul);
     nenv_add_builtin(e, "/", builtin_div);
+    nenv_add_builtin(e, "%", builtin_modulus);
 
     /* Logical operators */
     nenv_add_builtin(e, "if", builtin_if);
@@ -115,43 +117,62 @@ nval* builtin_load(nenv* e, nval* a) {
 /* Builtin arithmatic operations */
 nval* builtin_op(nenv* e, nval* a, char* op) {
     LASSERT_MIN_ARGS(op, a, 2);
+    bool is_double = false;
 
     for (int i = 0; i < a->count; i++) {
-        LASSERT_TYPE(op, a, i, NVAL_NUM);
+        LASSERT(a, a->cell[i]->type == NVAL_NUM || a->cell[i]->type == NVAL_DOUBLE,
+            "Function '%s' was passed incorrect type", op);
+
+        if (a->cell[i]->type == NVAL_DOUBLE) {
+            is_double = true;
+            break;
+        }
     }
 
+    /* Convert numbers to double for operation */
+    for (int i = 0; i < a->count; i++) {
+        if (a->cell[i]->type == NVAL_NUM) {
+            a->cell[i]->doub = a->cell[i]->num;
+            a->cell[i]->type = NVAL_DOUBLE;
+        }
+    }
     nval* x = nval_pop(a, 0);
 
     if ((strcmp(op, "-") == 0) && a->count == 0) {
-        x->num = -x->num;
+        x->doub = -x->doub;
     }
 
     while (a->count > 0) {
         nval* y = nval_pop(a, 0);
 
-        if (strcmp(op, "+") == 0) { x->num += y->num; }
-        if (strcmp(op, "-") == 0) { x->num -= y->num; }
-        if (strcmp(op, "*") == 0) { x->num *= y->num; }
+        if (strcmp(op, "+") == 0) { x->doub += y->doub; }
+        if (strcmp(op, "-") == 0) { x->doub -= y->doub; }
+        if (strcmp(op, "*") == 0) { x->doub *= y->doub; }
         if (strcmp(op, "/") == 0) {
-            if (y->num == 0) {
+            if (y->doub == 0) {
                 nval_del(x);
                 nval_del(y);
                 x = nval_err("Division By Zero!"); break;
             }
-            x->num /= y->num;
+            x->doub /= y->doub;
         }
         if (strcmp(op, "%") == 0) {
-            if (y->num == 0) {
+            if (y->doub == 0) {
                 nval_del(x);
                 nval_del(y);
                 x = nval_err("Division By Zero!"); break;
             }
-            x->num %= y->num;
+            x->doub = fmod(x->doub, y->doub);
         }
 
         nval_del(y);
     }
 
+    /* If none of the inputs were double, reconvert to NVAL_NUM */
+    if (!is_double) {
+        x->num = x->doub;
+        x->type = NVAL_NUM;
+    }
     nval_del(a);
     return x;
 }
@@ -170,6 +191,10 @@ nval* builtin_mul(nenv* e, nval* a) {
 
 nval* builtin_div(nenv* e, nval* a) {
     return builtin_op(e, a, "/");
+}
+
+nval* builtin_modulus(nenv* e, nval* a) {
+    return builtin_op(e, a, "%");
 }
 
 /* Take a Q-Expression and return a Q-Expression with only the first element */
@@ -392,21 +417,31 @@ nval* builtin_le(nenv* e, nval* a) {
 
 nval* builtin_ord(nenv* e, nval* a, char* op) {
     LASSERT_NUM(op, a, 2);
-    LASSERT_TYPE(op, a, 0, NVAL_NUM);
-    LASSERT_TYPE(op, a, 1, NVAL_NUM);
+    LASSERT(a, a->cell[0]->type == NVAL_NUM || a->cell[0]->type == NVAL_DOUBLE,
+        "Function '%s' cannot work on non-numbers");
+    LASSERT(a, a->cell[1]->type == NVAL_NUM || a->cell[1]->type == NVAL_DOUBLE,
+        "Function '%s' cannot work on non-numbers");
+
+    /* Convert to double for comparison */
+    if (a->cell[0]->type == NVAL_NUM) {
+        a->cell[0]->doub = a->cell[0]->num;
+    }
+    if (a->cell[1]->type == NVAL_NUM) {
+        a->cell[1]->doub = a->cell[1]->num;
+    }
 
     int r;
     if (strcmp(op, ">") == 0) {
-        r = (a->cell[0]->num > a->cell[1]->num);
+        r = (a->cell[0]->doub > a->cell[1]->doub);
     }
     if (strcmp(op, "<") == 0) {
-        r = (a->cell[0]->num < a->cell[1]->num);
+        r = (a->cell[0]->doub < a->cell[1]->doub);
     }
     if (strcmp(op, ">=") == 0) {
-        r = (a->cell[0]->num >= a->cell[1]->num);
+        r = (a->cell[0]->doub >= a->cell[1]->doub);
     }
     if (strcmp(op, "<=") == 0) {
-        r = (a->cell[0]->num <= a->cell[1]->num);
+        r = (a->cell[0]->doub <= a->cell[1]->doub);
     }
     nval_del(a);
     return nval_num(r);
@@ -419,6 +454,7 @@ int nval_eq(nval* x, nval* y) {
   switch (x->type) {
     case NVAL_QUIT:
     case NVAL_NUM: return (x->num == y->num);
+    case NVAL_DOUBLE: return (x->doub == y->doub);
 
     case NVAL_ERR: return (strcmp(x->err, y->err) == 0);
     case NVAL_SYM: return (strcmp(x->sym, y->sym) == 0);

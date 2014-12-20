@@ -139,10 +139,16 @@ bool nenv_def_protected(nenv* e, nval* k, nval* v) {
 
 /* Constructor functions for nval types */
 nval* nval_num(long x) {
-    //nval* v = nmalloc();
     nval* v = nmalloc();
     v->type = NVAL_NUM;
     v->num = x;
+    return v;
+}
+
+nval* nval_double(double x) {
+    nval* v = nmalloc();
+    v->type = NVAL_DOUBLE;
+    v->doub = x;
     return v;
 }
 
@@ -249,6 +255,7 @@ void nval_del(nval* v) {
     switch (v->type) {
         /* Number and function, nothing special */
         case NVAL_NUM: break;
+        case NVAL_DOUBLE: break;
         case NVAL_OK:  break;
         case NVAL_EMPTY: break;
         case NVAL_FUN_MACRO: break; /* Macros are only builtin systems */
@@ -316,6 +323,7 @@ nval* nval_copy(nval* v) {
     switch (v->type) {
         case NVAL_EMPTY: break;
         case NVAL_NUM: x->num = v->num; break;
+        case NVAL_DOUBLE: x->doub = v->doub; break;
         case NVAL_OK:  x->ok = v->ok; break;
         case NVAL_FUN_MACRO: x->builtin = v->builtin; break;
 
@@ -357,6 +365,7 @@ char* ntype_name(int t) {
         case NVAL_FUN: return "Function";
         case NVAL_FUN_MACRO: return "Language Macro";
         case NVAL_NUM: return "Number";
+        case NVAL_DOUBLE: return "Double";
         case NVAL_ERR: return "Error";
         case NVAL_SYM: return "Symbol";
         case NVAL_SEXPR: return "S-Expression";
@@ -374,6 +383,7 @@ void nval_print(nval* v) {
     switch (v->type) {
         case NVAL_EMPTY: break;
         case NVAL_NUM:   printf("%li", v->num); break;
+        case NVAL_DOUBLE:   printf("%f", v->doub); break;
         case NVAL_ERR:   printf("Error: %s", v->err); break;
         case NVAL_SYM:   printf("%s", v->sym); break;
         case NVAL_OK:

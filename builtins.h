@@ -18,6 +18,7 @@ nval* builtin_add(nenv* e, nval* a);
 nval* builtin_sub(nenv* e, nval* a);
 nval* builtin_mul(nenv* e, nval* a);
 nval* builtin_div(nenv* e, nval* a);
+nval* builtin_modulus(nenv* e, nval* a);
 
 /* Q-Expression functions */
 nval* builtin_head(nenv* e, nval* a);

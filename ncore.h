@@ -33,7 +33,9 @@ struct nenv;
 typedef struct nval nval;
 typedef struct nenv nenv;
 
-enum { NVAL_NUM, NVAL_ERR, NVAL_SYM, NVAL_STR, NVAL_SEXPR, NVAL_QEXPR, NVAL_FUN, NVAL_FUN_MACRO, NVAL_OK, NVAL_EMPTY, NVAL_QUIT };
+enum { NVAL_NUM, NVAL_DOUBLE, NVAL_ERR, NVAL_SYM, NVAL_STR,
+       NVAL_SEXPR, NVAL_QEXPR, NVAL_FUN, NVAL_FUN_MACRO,
+       NVAL_OK, NVAL_EMPTY, NVAL_QUIT };
 /* Notes: NVAL_QUIT is a special type that when encountered will stop execution and close the interpreter. It holds no value. */
 
 typedef nval*(*nbuiltin)(nenv*, nval*);
@@ -42,6 +44,7 @@ struct nval {
     int type;
 
     long num;
+    double doub;
     char* err;
     char* sym;
     char* str;
@@ -78,6 +81,7 @@ bool nenv_def_protected(nenv* e, nval* k, nval* v);
 
 /* Constructor functions for nval types */
 nval* nval_num(long x);
+nval* nval_double(double x);
 nval* nval_err(char* fmt, ...);
 nval* nval_sym(char* s);
 nval* nval_sexpr(void);
