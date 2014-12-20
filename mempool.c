@@ -15,6 +15,7 @@ typedef struct mem_control_block {
 } mem_control_block;
 
 static bool ready;
+static int chunks_allocated;
 static void* memory_pool_start;
 static void* memory_pool_end;
 static size_t mem_chunk_size = sizeof(nval) + sizeof(mem_control_block);
@@ -23,6 +24,7 @@ void allocate_pool(void) {
 	memory_pool_start = malloc(POOL_SIZE * mem_chunk_size);
 	memory_pool_end = memory_pool_start + (POOL_SIZE * mem_chunk_size) - mem_chunk_size; // Last usable address
 	VALGRIND_CREATE_MEMPOOL(memory_pool_start, 0, 0);
+	chunks_allocated = 0;
 	ready = true;
 	return;
 }
@@ -40,7 +42,7 @@ void* nmalloc(void) {
 
 	while (current_location < memory_pool_end) {
 		current_location_mcb = current_location;
-		if (current_location_mcb == NULL || current_location_mcb->is_used) {
+		if (current_location_mcb->is_used) {
 			current_location = current_location + mem_chunk_size;
 			continue;
 		} else {
@@ -55,6 +57,7 @@ void* nmalloc(void) {
 	}
 	memory_location = memory_location + sizeof(mem_control_block);
 	VALGRIND_MEMPOOL_ALLOC(memory_pool_start, memory_location, sizeof(nval));
+	chunks_allocated++;
 	return memory_location;
 }
 
@@ -63,6 +66,7 @@ void nfree(void* p) {
 	mcb = p - sizeof(mem_control_block);
 	mcb->is_used = false;
 	VALGRIND_MEMPOOL_FREE(memory_pool_start, p);
+	chunks_allocated--;
 	return;
 }
 
@@ -70,4 +74,8 @@ void deallocate_pool(void) {
 	VALGRIND_DESTROY_MEMPOOL(memory_pool_start);
 	free(memory_pool_start);
 	return;
+}
+
+int pool_stats(void) {
+	return chunks_allocated;
 }

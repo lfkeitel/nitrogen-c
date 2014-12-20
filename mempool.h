@@ -5,5 +5,6 @@ void allocate_pool(void);
 void* nmalloc(void);
 void nfree(void* p);
 void deallocate_pool(void);
+int pool_stats(void);
 
 #endif
