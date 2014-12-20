@@ -44,7 +44,7 @@ void nenv_add_builtins(nenv* e) {
     nenv_add_builtin(e, "join", builtin_join);
 
     nenv_add_builtin(e, "strcat", builtin_strconcat);
-    nenv_add_builtin(e, "pool-stats", builtin_pool_stats);
+    nenv_add_builtin(e, "mem-pool-stats", builtin_pool_stats);
 
     /* Mathematical Functions */
     nenv_add_builtin(e, "+", builtin_add);
@@ -63,7 +63,7 @@ void nenv_add_builtins(nenv* e) {
 }
 
 nval* builtin_pool_stats(nenv* e, nval* a) {
-    printf("Chunks allocated: %d\n", pool_stats());
+    pool_stats();
     nval_del(a);
     return nval_empty();
 }
