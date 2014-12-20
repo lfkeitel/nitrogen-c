@@ -117,7 +117,7 @@ int main(int argc, char** argv) {
     nval_del(x);
 
     if (argc == 1) {
-        puts("Nitrogen Version 0.1.0");
+        puts("Nitrogen Version 0.2.0");
         puts("Press Ctrl+c or (exit) to Exit\n");
 
         while (1) {

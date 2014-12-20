@@ -1,4 +1,4 @@
-Nitrogen v0.1.0
+Nitrogen v0.2.0
 ================
 
 Nitrogen is a Lisp-based programming language. Please note, this version is not complete and many things may change that can/will break other things. You have been warned.
