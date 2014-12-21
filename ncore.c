@@ -97,6 +97,11 @@ void nenv_rem(nenv* e, nval* k) {
             if (strcmp(e->syms[i], k->sym) == 0) {
                 free(e->syms[i]);
                 nval_del(e->vals[i]);
+                memmove(&e->syms[i], &e->syms[i+1], sizeof(char*) * (e->count-i-1));
+                memmove(&e->vals[i], &e->vals[i+1], sizeof(nval*) * (e->count-i-1));
+                e->count--;
+                e->syms = realloc(e->syms, sizeof(char*) * e->count);
+                e->vals = realloc(e->vals, sizeof(nval*) * e->count);
                 return;
             }
         }
