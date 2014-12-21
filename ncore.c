@@ -453,29 +453,23 @@ nval* nval_eval(nenv* e, nval* v) {
 }
 
 nval* nval_eval_sexpr(nenv* e, nval* v) {
-    if (v->count > 0) {
-        v->cell[0] = nval_eval(e, v->cell[0]);
-        if (v->cell[0]->type != NVAL_FUN_MACRO) {
-            /*nval* fmac = nval_pop(v, 0);
-            nval* macresult = nval_call(e, fmac, v);
-            nval_del(fmac);
-            return macresult;*/
+    if (v->count == 0) { return v; }
 
-            for (int i = 1; i < v->count; i++) {
-                v->cell[i] = nval_eval(e, v->cell[i]);
+    v->cell[0] = nval_eval(e, v->cell[0]);
+    if (v->cell[0]->type != NVAL_FUN_MACRO) {
+        for (int i = 1; i < v->count; i++) {
+            v->cell[i] = nval_eval(e, v->cell[i]);
+        }
+
+        for (int i = 0; i < v->count; i++) {
+            if (v->cell[i]->type == NVAL_ERR) {
+                return nval_take(v, i);
             }
+        }
 
-            for (int i = 0; i < v->count; i++) {
-                if (v->cell[i]->type == NVAL_ERR) {
-                    return nval_take(v, i);
-                }
-            }
-
-            if (v->count == 0) { return v; }
-            if (v->count == 1) {
-                if (v->cell[0]->type != NVAL_FUN) {
-                    return nval_take(v, 0);
-                }
+        if (v->count == 1) {
+            if (v->cell[0]->type != NVAL_FUN) {
+                return nval_take(v, 0);
             }
         }
     }
