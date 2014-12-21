@@ -91,6 +91,10 @@ void nenv_rem(nenv* e, nval* k) {
                 printf("Error: Cannot undefine builtin function\n");
                 break;
             }
+            if (e->protected[i]) {
+                printf("Error: Cannot undefine constant\n");
+                break;
+            }
             free(e->syms[i]);
             nval_del(e->vals[i]);
             memmove(&e->syms[i], &e->syms[i+1], sizeof(char*) * (e->count-i-1));
