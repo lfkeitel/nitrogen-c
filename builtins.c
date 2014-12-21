@@ -32,7 +32,7 @@ void nenv_add_builtins(nenv* e) {
 
     /* Variables and functions */
     nenv_add_builtin_macro(e, "def", builtin_def);
-    nenv_add_builtin_macro(e, "pdef", builtin_pdef);
+    nenv_add_builtin_macro(e, "const", builtin_const);
     nenv_add_builtin_macro(e, "=", builtin_put);
     nenv_add_builtin(e, "undef", builtin_undef);
     nenv_add_builtin(e, "\\", builtin_lambda);
@@ -281,8 +281,8 @@ nval* builtin_def(nenv* e, nval* a) {
     return builtin_var(e, a, "def");
 }
 
-nval* builtin_pdef(nenv* e, nval* a) {
-    return builtin_var(e, a, "pdef");
+nval* builtin_const(nenv* e, nval* a) {
+    return builtin_var(e, a, "const");
 }
 
 nval* builtin_put(nenv* e, nval* a) {
@@ -313,14 +313,14 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
             if (strcmp(func, "def") == 0) {
                 if (!nenv_def(e, syms->cell[i], a->cell[i+1])) {
                     nval_del(a);
-                    return nval_err("Cannot redefine protected functions");
+                    return nval_err("Cannot redefine constants");
                 }
             }
 
-            if (strcmp(func, "pdef") == 0) {
+            if (strcmp(func, "const") == 0) {
                 if (!nenv_def_protected(e, syms->cell[i], a->cell[i+1])) {
                     nval_del(a);
-                    return nval_err("Cannot redefine protected functions");
+                    return nval_err("Cannot redefine constants");
                 }
             }
 
@@ -343,14 +343,14 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
         if (strcmp(func, "def") == 0) {
             if (!nenv_def(e, a->cell[0], a->cell[1])) {
                 nval_del(a);
-                return nval_err("Cannot redefine protected functions");
+                return nval_err("Cannot redefine constants");
             }
         }
 
-        if (strcmp(func, "pdef") == 0) {
+        if (strcmp(func, "const") == 0) {
             if (!nenv_def_protected(e, a->cell[0], a->cell[1])) {
                 nval_del(a);
-                return nval_err("Cannot redefine protected functions");
+                return nval_err("Cannot redefine constants");
             }
         }
 

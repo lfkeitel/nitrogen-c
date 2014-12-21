@@ -32,7 +32,7 @@ nval* builtin_pool_stats(nenv* e, nval* a);
 
 /* Variable and functions definitions */
 nval* builtin_def(nenv* e, nval* a);
-nval* builtin_pdef(nenv* e, nval* a);
+nval* builtin_const(nenv* e, nval* a);
 nval* builtin_put(nenv* e, nval* a);
 nval* builtin_var(nenv* e, nval* a, char* func);
 nval* builtin_undef(nenv* e, nval* a);

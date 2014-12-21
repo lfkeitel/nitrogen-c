@@ -3,15 +3,15 @@
 ;;;
 
 ;;; Atoms
-(pdef {nil} {})
-(pdef {true} 1)
-(pdef {false} 0)
+(const {nil} {})
+(const {true} 1)
+(const {false} 0)
 
 ;;; Functional Functions
 
 ; Protected Function Definitions
-(pdef pfun (\ {f b} {
-    pdef (head f) (\ (tail f) b)
+(const pfun (\ {f b} {
+    const (head f) (\ (tail f) b)
 }))
 
 ; Normal Function Definitions
@@ -33,8 +33,8 @@
 (pfun {pack f & xs} {f xs})
 
 ; Curried and Uncurried calling
-(pdef {curry} unpack)
-(pdef {uncurry} pack)
+(const {curry} unpack)
+(const {uncurry} pack)
 
 ; Performs several things in sequence
 (pfun {do & l} {
@@ -79,7 +79,7 @@
             unpack case (join (list x) (tail cs))}}
 })
 
-(pdef {otherwise} true)
+(const {otherwise} true)
 
 ;;; List Functions
 
@@ -255,4 +255,4 @@
 })
 
 ;;; Variable to know the core library is loaded
-(pdef {ncorelib} true)
+(const {ncorelib} true)

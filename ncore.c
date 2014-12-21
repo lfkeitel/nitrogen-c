@@ -46,34 +46,17 @@ nval* nenv_get(nenv* e, nval* k) {
     return nval_err("Symbol '%s' not declared", k->sym);
 }
 
-bool nenv_put(nenv* e, nval* k, nval* v) {
+bool nenv_add_val(nenv* e, nval* k, nval* v, bool p) {
     /* Check if variable already exists */
     for (int i = 0; i < e->count; i++) {
         if (strcmp(e->syms[i], k->sym) == 0) {
             if (!e->protected[i]) {
                 nval_del(e->vals[i]);
                 e->vals[i] = nval_copy(v);
+                if (p) { e->protected[i] = true; }
+                else { e->protected[i] = false; }
                 return true;
             }
-            return false;
-        }
-    }
-
-    /* If not, create it */
-    e->count++;
-    e->vals = realloc(e->vals, sizeof(nval*) * e->count);
-    e->syms = realloc(e->syms, sizeof(char*) * e->count);
-
-    e->vals[e->count-1] = nval_copy(v);
-    e->syms[e->count-1] = malloc(strlen(k->sym)+1);
-    strcpy(e->syms[e->count-1], k->sym);
-    return true;
-}
-
-bool nenv_put_protected(nenv* e, nval* k, nval* v) {
-    /* Check if variable already exists */
-    for (int i = 0; i < e->count; i++) {
-        if (strcmp(e->syms[i], k->sym) == 0) {
             return false;
         }
     }
@@ -86,27 +69,38 @@ bool nenv_put_protected(nenv* e, nval* k, nval* v) {
 
     e->vals[e->count-1] = nval_copy(v);
     e->syms[e->count-1] = malloc(strlen(k->sym)+1);
-    e->protected[e->count-1] = true;
+    if (p) { e->protected[e->count-1] = true; }
+    else { e->protected[e->count-1] = false; }
     strcpy(e->syms[e->count-1], k->sym);
     return true;
 }
 
+bool nenv_put(nenv* e, nval* k, nval* v) {
+    return nenv_add_val(e, k, v, false);
+}
+
+bool nenv_put_protected(nenv* e, nval* k, nval* v) {
+    return nenv_add_val(e, k, v, true);
+}
+
 void nenv_rem(nenv* e, nval* k) {
-    do {
-        for (int i = 0; i < e->count; i++) {
-            if (strcmp(e->syms[i], k->sym) == 0) {
-                free(e->syms[i]);
-                nval_del(e->vals[i]);
-                memmove(&e->syms[i], &e->syms[i+1], sizeof(char*) * (e->count-i-1));
-                memmove(&e->vals[i], &e->vals[i+1], sizeof(nval*) * (e->count-i-1));
-                e->count--;
-                e->syms = realloc(e->syms, sizeof(char*) * e->count);
-                e->vals = realloc(e->vals, sizeof(nval*) * e->count);
-                return;
+    while (e->par) { e = e->par; }
+    for (int i = 0; i < e->count; i++) {
+        if (strcmp(e->syms[i], k->sym) == 0) {
+            if (e->vals[i]->type == NVAL_FUN && e->vals[i]->builtin) {
+                printf("Error: Cannot undefine builtin function\n");
+                break;
             }
+            free(e->syms[i]);
+            nval_del(e->vals[i]);
+            memmove(&e->syms[i], &e->syms[i+1], sizeof(char*) * (e->count-i-1));
+            memmove(&e->vals[i], &e->vals[i+1], sizeof(nval*) * (e->count-i-1));
+            e->count--;
+            e->syms = realloc(e->syms, sizeof(char*) * e->count);
+            e->vals = realloc(e->vals, sizeof(nval*) * e->count);
+            return;
         }
-        e = e->par;
-    } while (e->par);
+    }
     return;
 }
 
