@@ -438,7 +438,7 @@ void nval_print_str(nval* v) {
     char* escaped = malloc(strlen(v->str)+1);
     strcpy(escaped, v->str);
     escaped = mpcf_escape(escaped);
-    printf("\"%s\"", escaped);
+    printf("%s", escaped);
     free(escaped);
 }
 
@@ -503,7 +503,7 @@ nval* nval_call(nenv* e, nval* f, nval* a) {
             nval_del(a);
             return nval_err(
                 "Function passed too many arguments. "
-                "Got %i, Expected %i.", given, total); 
+                "Got %i, Expected %i.", given, total);
         }
 
         nval* sym = nval_pop(f->formals, 0);

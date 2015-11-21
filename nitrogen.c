@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <unistd.h>
+#include <libgen.h>
 
 #include "mpc.h"
 
@@ -69,7 +71,7 @@ nval* nval_read(mpc_ast_t* t) {
 
     /* If root (>) or s/qexpr then create empty list */
     nval* x = NULL;
-    if (strcmp(t->tag, ">") == 0) { x = nval_sexpr(); } 
+    if (strcmp(t->tag, ">") == 0) { x = nval_sexpr(); }
     if (strstr(t->tag, "sexpr"))  { x = nval_sexpr(); }
     if (strstr(t->tag, "qexpr"))  { x = nval_qexpr(); }
 
@@ -104,7 +106,7 @@ int main(int argc, char** argv) {
           number    : /-?[.|0-9]+/ ;                                            \
           symbol    : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&%]+/ ;                       \
           string    : /\"(\\\\.|[^\"])*\"/ ;                                    \
-          comment   : /;[^\\r\\n]*/ ;                                           \
+          comment   : /[;#][^\\r\\n]*/ ;                                        \
           sexpr     : '(' <expr>* ')' ;                                         \
           qexpr     : '{' <expr>* '}' ;                                         \
           expr      : <number> | <symbol> | <sexpr>                             \
@@ -115,8 +117,18 @@ int main(int argc, char** argv) {
 
     nenv* e = nenv_new();
     nenv_add_builtins(e);
-    
-    nval* args = nval_add(nval_sexpr(), nval_str("ncore.n"));
+
+    char dest[4096];
+    if (readlink("/proc/self/exe", dest, 4096) == -1) {
+        puts("Error loading Nitrogen interpreter");
+        nenv_del(e);
+        mpc_cleanup(8, Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Nitrogen);
+        deallocate_pools();
+        return 1;
+    }
+
+    strcat(dirname(dest), "/ncore.n");
+    nval* args = nval_add(nval_sexpr(), nval_str(dest));
     nval* x = builtin_load(e, args);
     if (x->type == NVAL_ERR) { nval_println(x); }
     nval_del(x);
@@ -128,7 +140,7 @@ int main(int argc, char** argv) {
         while (1) {
             char* input = readline("nitrogen> ");
             add_history(input);
-            
+
             mpc_result_t r;
             if (mpc_parse("<stdin>", input, Nitrogen, &r)) {
                 //mpc_ast_print(r.output);

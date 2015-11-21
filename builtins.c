@@ -73,11 +73,11 @@ nval* builtin_pool_stats(nenv* e, nval* a) {
 nval* builtin_load(nenv* e, nval* a) {
   LASSERT_NUM("load", a, 1);
   LASSERT_TYPE("load", a, 0, NVAL_STR);
-  
+
   /* Parse File given by string name */
   mpc_result_t r;
   if (mpc_parse_contents(a->cell[0]->str, Nitrogen, &r)) {
-    
+
     /* Read contents */
     nval* expr = nval_read(r.output);
     mpc_ast_delete(r.output);
@@ -91,24 +91,24 @@ nval* builtin_load(nenv* e, nval* a) {
         if (x->type == NVAL_QUIT) { nval_del(x); break; }
         nval_del(x);
     }
-    
+
     /* Delete expressions and arguments */
-    nval_del(expr);    
+    nval_del(expr);
     nval_del(a);
-    
+
     /* Return empty list */
     return nval_ok();
-    
+
   } else {
     /* Get Parse Error as String */
     char* err_msg = mpc_err_string(r.error);
     mpc_err_delete(r.error);
-    
+
     /* Create new error message using it */
     nval* err = nval_err("Could not load Library %s", err_msg);
     free(err_msg);
     nval_del(a);
-    
+
     /* Cleanup and return error */
     return err;
   }
@@ -298,7 +298,7 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
         for (int i = 0; i < syms->count; i++) {
             LASSERT(a, (syms->cell[i]->type == NVAL_SYM),
               "Function '%s' cannot define non-symbol. "
-              "Got %s, Expected %s.", func, 
+              "Got %s, Expected %s.", func,
               ntype_name(syms->cell[i]->type),
               ntype_name(NVAL_SYM));
         }
@@ -326,7 +326,7 @@ nval* builtin_var(nenv* e, nval* a, char* func) {
 
             if (strcmp(func, "=")   == 0) {
                 nenv_put(e, syms->cell[i], a->cell[i+1]);
-            } 
+            }
         }
     } else {
         LASSERT_NUM(func, a, 2);
@@ -464,7 +464,7 @@ int nval_eq(nval* x, nval* y) {
       if (x->builtin || y->builtin) {
         return x->builtin == y->builtin;
       } else {
-        return nval_eq(x->formals, y->formals) 
+        return nval_eq(x->formals, y->formals)
           && nval_eq(x->body, y->body);
       }
 
@@ -518,12 +518,12 @@ nval* builtin_if(nenv* e, nval* a) {
     /* Only truth evaluation is given */
     if (a->cell[0]->num) {
         x = nval_eval(e, nval_pop(a, 1));
-    } 
+    }
 
     if (!a->cell[0]->num && a->count > 2) {
         /* Both evaluations are given and is false */
         x = nval_eval(e, nval_pop(a, 2));
-    } 
+    }
     if (!a->cell[0]->num && a->count < 2) {
         /* False evaluation was NOT given */
         x = nval_qexpr();
@@ -539,7 +539,7 @@ nval* builtin_print(nenv* e, nval* a) {
     }
     putchar('\n');
     nval_del(a);
-    return nval_ok();
+    return nval_empty();
 }
 
 nval* builtin_error(nenv* e, nval* a) {
